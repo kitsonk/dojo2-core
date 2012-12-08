@@ -72,6 +72,9 @@ The following naming conventions MUST be used:
   <tr>
     <td>Remover handle</td><td>handle</td>
   </tr>
+  <tr>
+    <td>All others</td><td>Do not abbreviate</td>
+  </tr>
 </table>
 
 1. All names SHOULD be as clear as necessary, SHOULD NOT be contracted just for
