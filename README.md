@@ -11,37 +11,168 @@ Dojo Toolkit.
 
 ## Code conventions
 
-Code committed to this repository should follow these jshint rules:
+1. All code names and comments MUST be written in English.
 
-```
-asi=false bitwise=false boss=false browser=true camelcase=true couch=false
-curly=true debug=false devel=true dojo=false eqeqeq=true eqnull=true es5=true
-esnext=false evil=false expr=true forin=false funcscope=true globalstrict=false
-immed=true iterator=false jquery=false lastsemic=false latedef=false
-laxbreak=true laxcomma=false loopfunc=true mootools=false multistr=false
-newcap=true noarg=true node=false noempty=false nonew=true nonstandard=false
-nomen=false onecase=false onevar=false passfail=false plusplus=false proto=false
-prototypejs=false regexdash=true regexp=false rhino=false undef=true
-unused=true scripturl=true shadow=false smarttabs=true strict=false sub=false
-supernew=false trailing=true validthis=true withstmt=false white=true
-worker=false wsh=false yui=false indent=4 predef=["require","define"]
-quotmark=single maxcomplexity=10
-```
+### Naming
 
-Unless otherwise noted, these options must not be overridden using `.jshintrc`
-or `/*jshint*/`.
+The following naming conventions MUST be used:
 
-`else` keywords must be on their own line, not cuddled with the closing
-bracket of the previous block. This is consistent with the use of all other
-block statements.
+<table>
+  <tr>
+    <th>Construct</th><th>Convention</th>
+  </tr>
+  <tr>
+    <td>package</td><td>lowerCamelCase</td>
+  </tr>
+  <tr>
+    <td>module returning constructor (“class”)</td><td>UpperCamelCase</td>
+  </tr>
+  <tr>
+    <td>all other modules</td><td>lowerCamelCase</td>
+  </tr>
+  <tr>
+    <td>constants</td><td>UPPER_CASE_WITH_UNDERSCORES</td>
+  </tr>
+  <tr>
+    <td>variables</td><td>lowerCamelCase or \_lowerCamelCase</td>
+  </tr>
+  <tr>
+    <td>parameters</td><td>lowerCamelCase or \_lowerCamelCase</td>
+  </tr>
+  <tr>
+    <td>public properties</td><td>lowerCamelCase</td>
+  </tr>
+  <tr>
+    <td>protected/private properties</td><td>\_lowerCamelCase</td>
+  </tr>
+</table>
 
-`var` declarations that declare multiple variables at once must always put
-each variable identifier on its own line. This prevents variable declarations
-being lost inside long lists that may also include immediate assignments.
+<table>
+  <tr>
+    <th>Variable type</th><th>Convention</th>
+  </tr>
+  <tr>
+    <td>Deferred</td><td>dfd</td>
+  </tr>
+  <tr>
+    <td>Promise</td><td>promise</td>
+  </tr>
+  <tr>
+    <td>Identifier</td><td>id</td>
+  </tr>
+  <tr>
+    <td>Numeric iterator</td><td>i, j, k, l</td>
+  </tr>
+  <tr>
+    <td>String iterator (for-in)</td><td>k, key</td>
+  </tr>
+  <tr>
+	<td>Event</td><td>event</td>
+  </tr>
+  <td>
+    <td>Remover handle</td><td>handle</td>
+  </td>
+</table>
 
-All public APIs must be commented using jsdoc annotations.
+1. All names SHOULD be as clear as necessary, SHOULD NOT be contracted just for
+   the sake of less typing, and MUST avoid unclear shortenings and
+   contractions (e.g. `MouseEventHandler`, not `MseEvtHdlr` or `hdl` or
+   `h`).
+1. Abbreviations and acronyms MUST NOT be uppercase when used as a name (i.e.
+   `getXml` not `getXML`).
+1. Collections MUST be named using a plural form.
+1. Names representing boolean states SHOULD start with `is`, `has`, `can`, or
+   `should`.
+1. Names representing boolean states MUST NOT be negative (i.e. `isNotFoo` is
+   unacceptable).
+1. Names representing a count of a number of objects SHOULD start with `num`.
+1. Names representing methods SHOULD be verbs or verb phrases (i.e.
+   `getValue()`, not `value()`).
+1. Non-constructor methods that generate new objects SHOULD use the verb
+   “create”.
+1. Magic numbers MUST either be represented using a constant or be prefixed
+   with a comment representing the literal value of the number (e.g.
+   `if (event.keyCode === Keys.KEY_A)` or
+   `if (event.keyCode === /* "a" */ 97)`).
 
-### Rationales
+### Style
+
+Most style convention matters are addressed by the mandated jshint options.
+
+1. Opening bracket of a code block MUST be written on the same line as its
+   statement:
+
+   ```javascript
+   // right
+   if (foo) {
+
+   }
+
+   // wrong
+   if (foo)
+   {
+
+   }
+   ```
+
+1. Blocks with a single statement MUST NOT be written on the same line as the
+   opening bracket.
+
+   ```javascript
+   // right
+   if (foo) {
+       bar;
+   }
+
+   // wrong
+   if (foo) { bar; }
+   ```
+
+1. The opening and closing brackets on objects and arrays MUST be surrounded by
+   whitespace on the inside of the object literal:
+
+   ```javascript
+   // right
+   var obj = { foo: 'foo' },
+       arr = [ obj, 'foo' ];
+
+   // wrong
+   var obj = {foo: 'foo'},
+       arr = [obj, 'foo'];
+   ```
+
+1. `case` statements inside switches that are intended to fall through to the
+   next statement MUST end with a line containing a single comment
+   `// fall through`.
+1. `else` and `while` keywords must be on their own line, not cuddled with the
+   closing bracket of the previous `if`/`do` block. This is consistent with the
+   use of all other block statements.
+1. `var` declarations that declare multiple variables at once must always put
+   each variable identifier on its own line. This prevents variable
+   declarations being lost inside long lists that may also include immediate
+   assignments.
+
+### Documentation
+
+1. All public APIs MUST be commented using
+   [jsdoc](https://code.google.com/p/jsdoc-toolkit/wiki/TagReference), following the
+   [Closure Compiler type expressions syntax](https://developers.google.com/closure/compiler/docs/js-for-compiler)
+   for type definitions.
+1. Comments MUST be added when intentionally making a change to code that
+   appears wrong or inefficient.
+1. Code SHOULD be written to be as self-documenting as possible. Comments
+   SHOULD be used to explain *why* a particular piece of code was written (or
+   why it was written the way it was), not *what* the code does. If code is so
+   confusing that it is not clear on its own, it SHOULD be rewritten to be
+   clearer.
+
+### Linting
+
+Code committed to this repository should follow the jshint rules given in the
+`.jshintrc` file. Unless otherwise noted, these options MUST NOT be overridden
+using `/*jshint*/`.
+
+#### Rationales
 
 * `asi`: Relying on ASI is sloppy and leads to inadvertent code breakage in
   edge cases. Using semicolons only in these edge cases requires all authors
