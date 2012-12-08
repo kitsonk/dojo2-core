@@ -69,9 +69,9 @@ The following naming conventions MUST be used:
   <tr>
 	<td>Event</td><td>event</td>
   </tr>
-  <td>
+  <tr>
     <td>Remover handle</td><td>handle</td>
-  </td>
+  </tr>
 </table>
 
 1. All names SHOULD be as clear as necessary, SHOULD NOT be contracted just for
