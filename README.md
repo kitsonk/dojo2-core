@@ -34,16 +34,16 @@ The following naming conventions MUST be used:
     <td>constants</td><td>UPPER_CASE_WITH_UNDERSCORES</td>
   </tr>
   <tr>
-    <td>variables</td><td>lowerCamelCase or \_lowerCamelCase</td>
+    <td>variables</td><td>lowerCamelCase or _lowerCamelCase</td>
   </tr>
   <tr>
-    <td>parameters</td><td>lowerCamelCase or \_lowerCamelCase</td>
+    <td>parameters</td><td>lowerCamelCase or _lowerCamelCase</td>
   </tr>
   <tr>
     <td>public properties</td><td>lowerCamelCase</td>
   </tr>
   <tr>
-    <td>protected/private properties</td><td>\_lowerCamelCase</td>
+    <td>protected/private properties</td><td>_lowerCamelCase</td>
   </tr>
 </table>
 
