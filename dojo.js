@@ -16,7 +16,6 @@
 	//
 	//		- browser
 	//		- node.js
-	//		- rhino
 	//
 	//		This is the so-called "source loader". As such, it includes many optional features that may be discarded by
 	//		building a customized version with the build system.
@@ -33,7 +32,7 @@
 	//
 	//	 1. Small library for use implementing the loader.
 	//	 2. Define the has.js API; this is used throughout the loader to bracket features.
-	//	 3. Define the node.js and rhino sniffs and sniff.
+	//	 3. Define the node.js sniff and sniff.
 	//	 4. Define the loader's data.
 	//	 5. Define the configuration machinery.
 	//	 6. Define the script element sniffing machinery and sniff for configuration data.
@@ -216,16 +215,7 @@
 	// configuration machinery; with an optimized/built defaultConfig, all configuration machinery can be discarded
 	// lexical variables hold key loader data structures to help with minification; these may be completely,
 	// one-time initialized by defaultConfig for optimized/built versions
-	var
-		aliases
-			// a vector of pairs of [regexs or string, replacement] => (alias, actual)
-			= [],
-
-		paths
-			// CommonJS paths
-			= {},
-
-		pathsMapProg
+	var pathsMapProg
 			// list of (from-path, to-path, regex, length) derived from paths;
 			// a "program" to apply paths; see computeMapProg
 			= [],
@@ -432,17 +422,6 @@
 					}
 				});
 
-				// push in any paths and recompute the internal pathmap
-				computeMapProg(mix(paths, config.paths), pathsMapProg);
-
-				// aliases
-				forEach(config.aliases, function (pair) {
-					if (isString(pair[0])) {
-						pair[0] = new RegExp('^' + escapeString(pair[0]) + '$');
-					}
-					aliases.push(pair);
-				});
-
 				if (booting) {
 					delayedModuleConfig.push({ config: config.config });
 				}
@@ -537,10 +516,8 @@
 	}
 	else {
 		// no config API, assume defaultConfig has everything the loader needs...for the entire lifetime of the application
-		paths = defaultConfig.paths;
 		pathsMapProg = defaultConfig.pathsMapProg;
 		packs = defaultConfig.packs;
-		aliases = defaultConfig.aliases;
 		mapProgs = defaultConfig.mapProgs;
 		modules = defaultConfig.modules;
 		cache = defaultConfig.cache;
@@ -774,19 +751,6 @@
 				}
 				else {
 					pid = '';
-				}
-
-				// search aliases
-				var candidateLength = 0,
-					candidate = 0;
-				forEach(aliases, function (pair) {
-					var match = mid.match(pair[0]);
-					if (match && match.length > candidateLength) {
-						candidate = isFunction(pair[1]) ? mid.replace(pair[0], pair[1]) : pair[1];
-					}
-				});
-				if (candidate) {
-					return _getModuleInfo(candidate, 0, packs, modules, baseUrl, mapProgs, pathsMapProg, alwaysCreate);
 				}
 
 				result = modules[mid];
@@ -1461,7 +1425,7 @@
 			injectDependencies(defineModule(targetModule, args[1], args[2]));
 		}
 		else {
-			// not IE path: anonymous module and therefore must have been injected; therefore, onLoad will fire immediately
+			// anonymous module and therefore must have been injected; therefore, onLoad will fire immediately
 			// after script finishes being evaluated and the defQ can be run from that callback to detect the module id
 			defQ.push(args);
 		}
@@ -1475,7 +1439,7 @@
 	}
 
 	// allow config to override default implementation of named functions; this is useful for
-	// non-browser environments, e.g., overriding injectUrl, getText, log, etc. in node.js, Rhino, etc.
+	// non-browser environments, e.g., overriding injectUrl, getText, log, etc. in node.js, etc.
 	// also useful for testing and monkey patching loader
 	mix(mix(req, defaultConfig.loaderPatch), userConfig.loaderPatch);
 
@@ -1503,8 +1467,6 @@
 	if (has('dojo-publish-privates')) {
 		mix(req, {
 			// these may be interesting to look at when debugging
-			paths: paths,
-			aliases: aliases,
 			modules: modules,
 			execQ: execQ,
 			defQ: defQ,
