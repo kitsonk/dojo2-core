@@ -811,9 +811,6 @@
 			else if (pid) {
 				url = pack.location + '/' + midInPackage;
 			}
-			else if (has('config-tlmSiblingOfDojo')) {
-				url = '../' + mid;
-			}
 			else {
 				url = mid;
 			}
@@ -1623,8 +1620,7 @@
 			'dojo-sniff': 1,
 			'dojo-test-sniff': 1,
 			'config-deferredInstrumentation': 1,
-			'config-useDeferredInstrumentation': 'report-unhandled-rejections',
-			'config-tlmSiblingOfDojo': 1
+			'config-useDeferredInstrumentation': 'report-unhandled-rejections'
 		},
 		packages: [{
 			// note: like v1.6-, this bootstrap computes baseUrl to be the dojo directory
