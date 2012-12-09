@@ -98,17 +98,9 @@
 			return mix(new Error(error), { src: 'dojoLoader', info: info });
 		},
 
-		uidSeed = 1,
-
-		uid = function () {
-			// Returns a unique identifier (within the lifetime of the document) of the form /_d+/.
-			return '_' + uidSeed++;
-		},
-
-		// FIXME: how to doc window.require() api
-
 		// this will be the global require function; define it immediately so we can start hanging things off of it
 		/**
+		 * TODOC.
 		 * @param config       //(object, optional) hash of configuration properties
 		 * @param dependencies //(array of commonjs.moduleId, optional) list of modules to be loaded before applying callback
 		 * @param callback     //(function, optional) lambda expression to apply to module values implied by dependencies
@@ -240,14 +232,14 @@
 			// Modules go through several phases in creation:
 			//
 			// 1. Requested: some other module's definition or a require application contained the requested module in
-			//	  its dependency array or executing code explicitly demands a module via req.require.
+			//    its dependency array or executing code explicitly demands a module via req.require.
 			//
 			// 2. Injected: a script element has been appended to the insert-point element demanding the resource implied by the URL
 			//
 			// 3. Loaded: the resource injected in [2] has been evaluated.
 			//
 			// 4. Defined: the resource contained a define statement that advised the loader about the module. Notice that some
-			//	  resources may just contain a bundle of code and never formally define a module via define
+			//    resources may just contain a bundle of code and never formally define a module via define
 			//
 			// 5. Evaluated: the module was defined via define and the loader has evaluated the factory and computed a result.
 			= {},
@@ -316,10 +308,6 @@
 				pendingCacheInsert = {};
 			},
 
-			escapeString = function (s) {
-				return s.replace(/([\.$?*|{}\(\)\[\]\\\/\+\^])/g, function (c) { return '\\' + c; });
-			},
-
 			computeMapProg = function (map, dest) {
 				// This routine takes a map as represented by a JavaScript object and initializes dest, a array of
 				// quads of (map-key, map-value, refex-for-map-key, length-of-map-key), sorted decreasing by length-
@@ -330,7 +318,7 @@
 					dest.push([
 						p,
 						map[p],
-						new RegExp('^' + escapeString(p) + '(\/|$)'),
+						new RegExp('^' + p.replace(/[-\[\]{}()*+?.,\\\^$|#\s]/g, '\\$&') + '(?:\/|$)'),
 						p.length
 					]);
 				}
@@ -531,6 +519,7 @@
 			});
 		},
 
+		uid = 0,
 		contextRequire = function (a1, a2, a3, referenceModule, contextRequire) {
 			var module, syntheticMid;
 			if (isString(a1)) {
@@ -555,7 +544,7 @@
 					a2 && a2();
 				}
 				else {
-					syntheticMid = 'require*' + uid();
+					syntheticMid = 'require*' + (uid++);
 
 					// resolve the request list with respect to the reference module
 					for (var mid, deps = [], i = 0; i < a1.length;) {
@@ -1453,7 +1442,6 @@
 
 	// always publish these
 	mix(req, {
-		uid: uid,
 		cache: cache,
 		packs: packs
 	});
