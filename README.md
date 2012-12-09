@@ -158,6 +158,8 @@ Those that are not are listed here:
    each variable identifier on its own line. This prevents variable
    declarations being lost inside long lists that may also include immediate
    assignments.
+1. The most appropriate data types SHOULD be used in all cases (i.e. boolean for
+   booleans, not number).
 
 ### Documentation
 
