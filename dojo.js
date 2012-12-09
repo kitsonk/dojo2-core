@@ -1309,29 +1309,16 @@
 		};
 	}
 
-	if (has('dom')) {
-		// the typically unnecessary !! in front of doc.attachEvent is due to an opera bug; see	#15096
-		has.add('ie-event-behavior', !!doc.attachEvent && (typeof opera === 'undefined' || opera.toString() !== '[object Opera]'));
-	}
-
 	if (has('dom') && (has('dojo-inject-api') || has('dojo-dom-ready-api'))) {
-		var domOn = function (node, eventName, ieEventName, handler) {
+		var domOn = function (node, eventName, handler) {
 				// Add an event listener to a DOM node using the API appropriate for the current browser;
 				// return a function that will disconnect the listener.
-				if (!has('ie-event-behavior')) {
-					node.addEventListener(eventName, handler, false);
-					return function () {
-						node.removeEventListener(eventName, handler, false);
-					};
-				}
-				else {
-					node.attachEvent(ieEventName, handler);
-					return function () {
-						node.detachEvent(ieEventName, handler);
-					};
-				}
+				node.addEventListener(eventName, handler, false);
+				return function () {
+					node.removeEventListener(eventName, handler, false);
+				};
 			},
-			windowOnLoadListener = domOn(window, 'load', 'onload', function () {
+			windowOnLoadListener = domOn(window, 'load', function () {
 				req.pageLoaded = 1;
 				doc.readyState !== 'complete' && (doc.readyState = 'complete');
 				windowOnLoadListener();
@@ -1358,8 +1345,8 @@
 							callback && callback();
 						}
 					},
-					loadDisconnector = domOn(node, 'load', 'onreadystatechange', onLoad),
-					errorDisconnector = domOn(node, 'error', 'onerror', function (e) {
+					loadDisconnector = domOn(node, 'load', onLoad),
+					errorDisconnector = domOn(node, 'error', function (e) {
 						loadDisconnector();
 						errorDisconnector();
 						signal(error, makeError('scriptError', [url, e]));
@@ -1480,32 +1467,10 @@
 			// dependencies are never requested; therefore, do it here.
 			injectDependencies(defineModule(targetModule, args[1], args[2]));
 		}
-		else if (!has('ie-event-behavior') || !has('host-browser') || injectingCachedModule) {
+		else {
 			// not IE path: anonymous module and therefore must have been injected; therefore, onLoad will fire immediately
 			// after script finishes being evaluated and the defQ can be run from that callback to detect the module id
 			defQ.push(args);
-		}
-		else {
-			// IE path: possibly anonymous module and therefore injected; therefore, cannot depend on 1-to-1,
-			// in-order exec of onLoad with script eval (since it's IE) and must manually detect here
-			targetModule = targetModule || injectingModule;
-			if (!targetModule) {
-				for (mid in waiting) {
-					module = modules[mid];
-					if (module && module.node && module.node.readyState === 'interactive') {
-						targetModule = module;
-						break;
-					}
-				}
-			}
-			if (targetModule) {
-				consumePendingCacheInsert(targetModule);
-				injectDependencies(defineModule(targetModule, args[1], args[2]));
-			}
-			else {
-				signal(error, makeError('ieDefineFailed', args[0]));
-			}
-			checkComplete();
 		}
 	};
 	def.amd = {
