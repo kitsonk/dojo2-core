@@ -59,7 +59,6 @@
 	// pid: packageId (used internally); the implied system or default package has pid===""
 	// pack: package is used internally to reference a package object (since javascript has reserved words including "package")
 	// prid: plugin resource identifier
-	// The integer constant 1 is used in place of true and 0 in place of false.
 
 	// define a minimal library to help build the loader
 	var noop = function () {},
@@ -120,9 +119,7 @@
 
 		// the loader uses the has.js API to control feature inclusion/exclusion; define then use throughout
 		global = this,
-
 		doc = global.document,
-
 		element = doc && doc.createElement('DiV'),
 
 		has = req.has = function (name) {
@@ -139,6 +136,7 @@
 	has.add('host-node', userConfig.has && 'host-node' in userConfig.has ?
 		userConfig.has['host-node'] :
 		(typeof process === 'object' && process.versions && process.versions.node));
+
 	if (has('host-node')) {
 		// fixup the default config for node.js environment
 		require('./configNode.js').config(defaultConfig);
@@ -222,7 +220,7 @@
 			= {},
 
 		mapProgs
-			// vector of quads as described by computeMapProg; map-key is AMD map key, map-value is AMD map value
+			// array of quads as described by computeMapProg; map-key is AMD map key, map-value is AMD map value
 			= [],
 
 		modules
@@ -233,7 +231,7 @@
 			// url: the URL from which the module was retrieved
 			// pack: the package object of the package to which the module belongs
 			// executed: false => not executed; "executing" => in the process of traversing deps and running factory; "executed" => factory has been executed
-			// deps: the dependency vector for this module (vector of modules objects)
+			// deps: the dependency array for this module (array of modules objects)
 			// def: the factory for this module
 			// result: the result of the running the factory for this module
 			// injected: (false | "requested" | "arrived") the status of the module; "non-module" means the resource did not call define
@@ -242,7 +240,7 @@
 			// Modules go through several phases in creation:
 			//
 			// 1. Requested: some other module's definition or a require application contained the requested module in
-			//	  its dependency vector or executing code explicitly demands a module via req.require.
+			//	  its dependency array or executing code explicitly demands a module via req.require.
 			//
 			// 2. Injected: a script element has been appended to the insert-point element demanding the resource implied by the URL
 			//
@@ -294,12 +292,17 @@
 
 	if (has('dojo-config-api')) {
 		var consumePendingCacheInsert = function (referenceModule) {
-				var p, item, match, now, m;
+				var p,
+					item,
+					match,
+					now,
+					m;
+
 				for (p in pendingCacheInsert) {
 					item = pendingCacheInsert[p];
 					match = p.match(/^url\:(.+)/);
 					if (match) {
-						cache[urlKeyPrefix + toUrl(match[1], referenceModule)] =  item;
+						cache[urlKeyPrefix + toUrl(match[1], referenceModule)] = item;
 					} else if (p === '*now') {
 						now = item;
 					} else if (p !== '*noref') {
@@ -318,7 +321,7 @@
 			},
 
 			computeMapProg = function (map, dest) {
-				// This routine takes a map as represented by a JavaScript object and initializes dest, a vector of
+				// This routine takes a map as represented by a JavaScript object and initializes dest, a array of
 				// quads of (map-key, map-value, refex-for-map-key, length-of-map-key), sorted decreasing by length-
 				// of-map-key. The regex looks for the map-key followed by either "/" or end-of-string at the beginning
 				// of a the search source. Notice the map-value is irrelevant to the algorithm
@@ -798,7 +801,7 @@
 					promoteModuleToPlugin(plugin);
 				}
 
-				// if the plugin has not been loaded, then can't resolve the prid and  must assume this plugin is dynamic until we find out otherwise
+				// if the plugin has not been loaded, then can't resolve the prid and must assume this plugin is dynamic until we find out otherwise
 				if (plugin.load) {
 					prid = resolvePluginResourceId(plugin, match[2], referenceModule);
 					mid = (plugin.mid + '!' + (plugin.dynamic ? ++dynamicPluginUidGenerator + '!' : '') + prid);
@@ -949,14 +952,13 @@
 		circleTrace = [],
 
 		execModule = function (module, strict) {
-			// run the dependency vector, then run the factory for module
+			// run the dependency array, then run the factory for module
 			if (module.executed === EXECUTING) {
 				req.trace('loader-circular-dependency', [circleTrace.concat(module.mid).join('->')]);
-				return (!module.def || strict) ? abortExec :  (module.cjs && module.cjs.exports);
+				return (!module.def || strict) ? abortExec : (module.cjs && module.cjs.exports);
 			}
+
 			// at this point the module is either not executed or fully executed
-
-
 			if (!module.executed) {
 				if (!module.def) {
 					return abortExec;
@@ -1220,7 +1222,7 @@
 
 			runDefQ = function (referenceModule, mids) {
 				// defQ is an array of [id, dependencies, factory]
-				// mids (if any) is a vector of mids given by a combo service
+				// mids (if any) is a array of mids given by a combo service
 				var definedModules = [],
 					module, args;
 				while (defQ.length) {
