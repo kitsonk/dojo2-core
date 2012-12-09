@@ -1,4 +1,7 @@
 (function (userConfig, defaultConfig) {
+	/*global process:false */
+	/*jshint evil:true */
+
 	// summary:
 	//		This is the "source loader" and is the entry point for Dojo during development. You may also load Dojo with
 	//		any AMD-compliant loader via the package main module dojo/main.
@@ -135,7 +138,7 @@
 
 	has.add('host-node', userConfig.has && 'host-node' in userConfig.has ?
 		userConfig.has['host-node'] :
-		(typeof process === 'object' && process.versions && process.versions.node && process.versions.v8));
+		(typeof process === 'object' && process.versions && process.versions.node));
 	if (has('host-node')) {
 		// fixup the default config for node.js environment
 		require('./configNode.js').config(defaultConfig);
@@ -155,26 +158,16 @@
 
 	// the loader will use these like symbols if the loader has the traceApi; otherwise
 	// define magic numbers so that modules can be provided as part of defaultConfig
-	var	requested = 1,
-		arrived = 2,
-		nonmodule = 3,
-		executing = 4,
-		executed = 5;
-
-	if (has('dojo-trace-api')) {
-		// these make debugging nice; but using strings for symbols is a gross rookie error; don't do it for production code
-		requested = 'requested';
-		arrived = 'arrived';
-		nonmodule = 'not-a-module';
-		executing = 'executing';
-		executed = 'executed';
-	}
+	var REQUESTED = 'requested',
+		ARRIVED = 'arrived',
+		NON_MODULE = 'non-module',
+		EXECUTING = 'executing',
+		EXECUTED = 'executed';
 
 	//
 	// loader eval
 	//
 	req.eval = (function () {
-		/*jshint evil:true */
 		// use the function constructor so our eval is scoped close to (but not in) in the global space with minimal pollution
 		var evil = new Function('return eval(arguments[0]);');
 
@@ -187,7 +180,7 @@
 	// loader micro events API
 	//
 	var listenerQueues = {},
-		error = 'error',
+		ERROR = 'error',
 		signal = req.signal = function (type, args) {
 			var queue = listenerQueues[type];
 			// notice we run a copy of the queue; this allows listeners to add/remove
@@ -239,11 +232,11 @@
 			// mid: the fully-resolved (i.e., mappings have been applied) module identifier without the package identifier (e.g., "dojo/io/script")
 			// url: the URL from which the module was retrieved
 			// pack: the package object of the package to which the module belongs
-			// executed: 0 => not executed; executing => in the process of traversing deps and running factory; executed => factory has been executed
+			// executed: false => not executed; "executing" => in the process of traversing deps and running factory; "executed" => factory has been executed
 			// deps: the dependency vector for this module (vector of modules objects)
 			// def: the factory for this module
 			// result: the result of the running the factory for this module
-			// injected: (0 | requested | arrived) the status of the module; nonmodule means the resource did not call define
+			// injected: (false | "requested" | "arrived") the status of the module; "non-module" means the resource did not call define
 			// load: plugin load function; applicable only for plugins
 			//
 			// Modules go through several phases in creation:
@@ -569,7 +562,7 @@
 
 					// construct a synthetic module to control execution of the requestList, and, optionally, callback
 					module = mix(makeModuleInfo('', syntheticMid, 0, ''), {
-						injected: arrived,
+						injected: ARRIVED,
 						deps: deps,
 						def: a2 || noop,
 						require: referenceModule ? referenceModule.require : req,
@@ -637,7 +630,7 @@
 			{},
 
 		setRequested = function (module) {
-			module.injected = requested;
+			module.injected = REQUESTED;
 			waiting[module.mid] = 1;
 			if (module.url) {
 				waiting[module.url] = module.pack || 1;
@@ -646,7 +639,7 @@
 		},
 
 		setArrived = function (module) {
-			module.injected = arrived;
+			module.injected = ARRIVED;
 			delete waiting[module.mid];
 			if (module.url) {
 				delete waiting[module.url];
@@ -800,7 +793,7 @@
 				// name was <plugin-module>!<plugin-resource-id>
 				plugin = getModule(match[1], referenceModule, immediate);
 
-				if (plugin.executed === executed && !plugin.load) {
+				if (plugin.executed === EXECUTED && !plugin.load) {
 					// executed the module not knowing it was a plugin
 					promoteModuleToPlugin(plugin);
 				}
@@ -845,10 +838,10 @@
 		},
 
 		nonModuleProps = {
-			injected: arrived,
-			executed: executed,
-			def: nonmodule,
-			result: nonmodule
+			injected: ARRIVED,
+			executed: EXECUTED,
+			def: NON_MODULE,
+			result: NON_MODULE
 		},
 
 		makeCjs = function (mid) {
@@ -868,7 +861,7 @@
 					result = isFunction(factory) ? factory.apply(null, args) : factory;
 				}
 				catch (e) {
-					signal(error, module.result = makeError('factoryThrew', [module, e]));
+					signal(ERROR, module.result = makeError('factoryThrew', [module, e]));
 				}
 			}
 			else {
@@ -931,7 +924,7 @@
 
 		finishExec = function (module) {
 			req.trace('loader-finish-exec', [module.mid]);
-			module.executed = executed;
+			module.executed = EXECUTED;
 			module.defOrder = defOrder++;
 			if (module.loadQ) {
 				// the module was a plugin
@@ -957,7 +950,7 @@
 
 		execModule = function (module, strict) {
 			// run the dependency vector, then run the factory for module
-			if (module.executed === executing) {
+			if (module.executed === EXECUTING) {
 				req.trace('loader-circular-dependency', [circleTrace.concat(module.mid).join('->')]);
 				return (!module.def || strict) ? abortExec :  (module.cjs && module.cjs.exports);
 			}
@@ -985,7 +978,7 @@
 				// add properties to it. When the module finally runs its factory, the factory can
 				// read/write/replace this object. Notice that so long as the object isn't replaced, any
 				// reference taken earlier while walking the deps list is still valid.
-				module.executed = executing;
+				module.executed = EXECUTING;
 				while (i < deps.length) {
 					arg = deps[i++];
 					argResult = ((arg === cjsRequireModule) ? createRequire(module) :
@@ -1074,7 +1067,7 @@
 				// injects the plugin module given by module; may have to inject the plugin itself
 				var plugin = module.plugin;
 
-				if (plugin.executed === executed && !plugin.load) {
+				if (plugin.executed === EXECUTED && !plugin.load) {
 					// executed the module not knowing it was a plugin
 					promoteModuleToPlugin(plugin);
 				}
@@ -1127,7 +1120,7 @@
 						}
 					}
 					catch (e) {
-						signal(error, makeError('evalModuleThrew', module));
+						signal(ERROR, makeError('evalModuleThrew', module));
 					}
 				}
 				else {
@@ -1161,7 +1154,7 @@
 
 				var onLoadCallback = function () {
 					runDefQ(module);
-					if (module.injected !== arrived) {
+					if (module.injected !== ARRIVED) {
 						// the script that contained the module arrived and has been executed yet
 						// nothing was added to the defQ (so it wasn't an AMD module) and the module
 						// wasn't marked as arrived by dojo.provide (so it wasn't a v1.6- module);
@@ -1190,8 +1183,8 @@
 			defineModule = function (module, deps, def) {
 				req.trace('loader-define-module', [module.mid, deps]);
 
-				if (module.injected === arrived) {
-					signal(error, makeError('multipleDefine', module));
+				if (module.injected === ARRIVED) {
+					signal(ERROR, makeError('multipleDefine', module));
 					return module;
 				}
 				mix(module, {
@@ -1261,7 +1254,7 @@
 			if (req.waitms) {
 				timerId = window.setTimeout(function () {
 					clearTimer();
-					signal(error, makeError('timeout', waiting));
+					signal(ERROR, makeError('timeout', waiting));
 				}, req.waitms);
 			}
 		};
@@ -1307,10 +1300,9 @@
 					errorDisconnector = domOn(node, 'error', function (e) {
 						loadDisconnector();
 						errorDisconnector();
-						signal(error, makeError('scriptError', [url, e]));
+						signal(ERROR, makeError('scriptError', [url, e]));
 					});
 
-				node.type = 'text/javascript';
 				node.charset = 'utf-8';
 				node.src = url;
 				insertPoint.insertBefore(node, sibling);
@@ -1444,7 +1436,7 @@
 	mix(mix(req, defaultConfig.loaderPatch), userConfig.loaderPatch);
 
 	// now that req is fully initialized and won't change, we can hook it up to the error signal
-	on(error, function (arg) {
+	on(ERROR, function (arg) {
 		try {
 			console.error(arg);
 			if (arg instanceof Error) {
@@ -1491,7 +1483,7 @@
 	// *required* to define (as opposed to require, which is optional)
 	if (global.define) {
 		if (has('dojo-log-api')) {
-			signal(error, makeError('defineAlreadyDefined', 0));
+			signal(ERROR, makeError('defineAlreadyDefined', 0));
 		}
 		return;
 	}
