@@ -115,7 +115,7 @@
 		 * @param callback     //(function, optional) lambda expression to apply to module values implied by dependencies
 		 */
 		req = function (config, dependencies, callback) {
-			return contextRequire(config, dependencies, callback, 0, req);
+			return contextRequire(config, dependencies, callback, null, req);
 		},
 
 		// the loader uses the has.js API to control feature inclusion/exclusion; define then use throughout
@@ -149,7 +149,7 @@
 	// userConfig has tests override defaultConfig has tests; do this after the environment detection because
 	// the environment detection usually sets some has feature values in the hasCache.
 	for (var p in userConfig.has) {
-		has.add(p, userConfig.has[p], 0, 1);
+		has.add(p, userConfig.has[p], false, true);
 	}
 
 	//
@@ -381,7 +381,7 @@
 					if (config[p] !== hasCache) {
 						// accumulate raw config info for client apps which can use this to pass their own config
 						req.rawConfig[p] = config[p];
-						p !== 'has' && has.add('config-' + p, config[p], 0, booting);
+						p !== 'has' && has.add('config-' + p, config[p], false, booting);
 					}
 				}
 
@@ -397,7 +397,7 @@
 				// now do the special work for has, packages, packagePaths, paths, aliases, and cache
 
 				for (p in config.has) {
-					has.add(p, config.has[p], 0, booting);
+					has.add(p, config.has[p], false, booting);
 				}
 
 				// for each package found in any packages config item, augment the packs map owned by the loader
@@ -491,7 +491,7 @@
 
 		// configure the loader; let the user override defaults
 		req.rawConfig = {};
-		config(defaultConfig, 1);
+		config(defaultConfig, true);
 
 		// do this before setting userConfig/sniffConfig to allow userConfig/sniff overrides
 		if (has('dojo-cdn')) {
@@ -503,8 +503,8 @@
 			packs.dojox.location = dojoDir + '../dojox/';
 		}
 
-		config(userConfig, 1);
-		config(dojoSniffConfig, 1);
+		config(userConfig, true);
+		config(dojoSniffConfig, true);
 
 	}
 	else {
@@ -522,7 +522,7 @@
 
 	// build the loader machinery iaw configuration, including has feature tests
 	var injectDependencies = function (module) {
-			// checkComplete!=0 holds the idle signal; we're not idle if we're injecting dependencies
+			// checkComplete!=false holds the idle signal; we're not idle if we're injecting dependencies
 			guardCheckComplete(function () {
 				forEach(module.deps, injectModule);
 			});
@@ -540,7 +540,7 @@
 			}
 			if (!isArray(a1)) {
 				// a1 is a configuration
-				config(a1, 0, referenceModule);
+				config(a1, false, referenceModule);
 
 				// juggle args; (a2, a3) may be (dependencies, callback)
 				a1 = a2;
@@ -561,16 +561,16 @@
 					}
 
 					// construct a synthetic module to control execution of the requestList, and, optionally, callback
-					module = mix(makeModuleInfo('', syntheticMid, 0, ''), {
+					module = mix(makeModuleInfo('', syntheticMid, null, ''), {
 						injected: ARRIVED,
 						deps: deps,
 						def: a2 || noop,
 						require: referenceModule ? referenceModule.require : req,
-						gc: 1 //garbage collect
+						gc: true //garbage collect
 					});
 					modules[module.mid] = module;
 
-					// checkComplete!=0 holds the idle signal; we're not idle if we're injecting dependencies
+					// checkComplete!=false holds the idle signal; we're not idle if we're injecting dependencies
 					injectDependencies(module);
 
 					// try to immediately execute
@@ -631,9 +631,9 @@
 
 		setRequested = function (module) {
 			module.injected = REQUESTED;
-			waiting[module.mid] = 1;
+			waiting[module.mid] = true;
 			if (module.url) {
-				waiting[module.url] = module.pack || 1;
+				waiting[module.url] = module.pack || true;
 			}
 			startTimer();
 		},
@@ -664,7 +664,7 @@
 					}
 				}
 			}
-			return 0;
+			return false;
 		},
 
 		compactPath = function (path) {
@@ -692,8 +692,8 @@
 				mid: mid,
 				pack: pack,
 				url: url,
-				executed: 0,
-				def: 0
+				executed: false,
+				def: false
 			};
 		},
 
@@ -714,9 +714,9 @@
 			if (/(^\/)|(\:)|(\.js$)/.test(mid) || (isRelative && !referenceModule)) {
 				// absolute path or protocol of .js filetype, or relative path but no reference module and therefore relative to page
 				// whatever it is, it's not a module but just a URL of some sort
-				// note: pid===0 indicates the routine is returning an unmodified mid
+				// note: pid===null indicates the routine is returning an unmodified mid
 
-				return makeModuleInfo(0, mid, 0, mid);
+				return makeModuleInfo(null, mid, null, mid);
 			}
 			else {
 				// relative module ids are relative to the referenceModule; get rid of any dots
@@ -754,7 +754,7 @@
 			// get here iff the sought-after module does not yet exist; therefore, we need to compute the URL given the
 			// fully resolved (i.e., all relative indicators and package mapping resolved) module id
 
-			// note: pid!==0 indicates the routine is returning a url that has .js appended unmodified mid
+			// note: pid!==null indicates the routine is returning a url that has .js appended unmodified mid
 			mapItem = runMapProg(mid, pathsMapProg);
 			if (mapItem) {
 				url = mapItem[1] + mid.substring(mapItem[3]);
@@ -829,8 +829,8 @@
 			var moduleInfo = getModuleInfo(name + '/x', referenceModule),
 				url = moduleInfo.url;
 
-			return fixupUrl(moduleInfo.pid === 0 ?
-				// if pid===0, then name had a protocol or absolute path; either way, toUrl is the identify function in such cases
+			return fixupUrl(moduleInfo.pid === null ?
+				// if pid===null, then name had a protocol or absolute path; either way, toUrl is the identify function in such cases
 				name :
 				// "/x.js" since getModuleInfo automatically appends ".js" and we appended "/x" to make name look like a module id
 				url.substring(0, url.length - 5)
@@ -893,7 +893,7 @@
 				// manufacture and insert the real module in modules
 				var prid = resolvePluginResourceId(plugin, pseudoPluginResource.prid, pseudoPluginResource.req.module),
 					mid = plugin.dynamic ? pseudoPluginResource.mid.replace(/waitingForPlugin$/, prid) : (plugin.mid + '!' + prid),
-					pluginResource = mix(mix({}, pseudoPluginResource), { mid: mid, prid: prid, injected: 0 });
+					pluginResource = mix(mix({}, pseudoPluginResource), { mid: mid, prid: prid, injected: false });
 				if (!modules[mid]) {
 					// create a new (the real) plugin resource and inject it normally now that the plugin is on board
 					injectPlugin(modules[mid] = pluginResource);
@@ -905,7 +905,7 @@
 				setArrived(pseudoPluginResource);
 				delete modules[pseudoPluginResource.mid];
 			});
-			plugin.loadQ = 0;
+			plugin.loadQ = null;
 
 			// step2: replace all references to any placeholder modules with real modules
 			var substituteModules = function (module) {
@@ -986,7 +986,7 @@
 										((arg === cjsModuleModule) ? module.cjs :
 											execModule(arg, strict))));
 					if (argResult === abortExec) {
-						module.executed = 0;
+						module.executed = false;
 						req.trace('loader-exec-module', ['abort', mid]);
 						has('dojo-trace-api') && circleTrace.pop();
 						return abortExec;
@@ -1055,7 +1055,7 @@
 
 	if (has('dojo-inject-api')) {
 		if (has('dojo-loader-eval-hint-url') === undefined) {
-			has.add('dojo-loader-eval-hint-url', 1);
+			has.add('dojo-loader-eval-hint-url', true);
 		}
 
 		var fixupUrl = function (url) {
@@ -1098,18 +1098,18 @@
 
 			// for IE, injecting a module may result in a recursive execution if the module is in the cache
 
-			cached = 0,
+			cached,
 
-			injectingModule = 0,
+			injectingModule = false,
 
-			injectingCachedModule = 0,
+			injectingCachedModule = false,
 
 			evalModuleText = function (text, module) {
 				// see def() for the injectingCachedModule bracket; it simply causes a short, safe circuit
 				if (has('config-stripStrict')) {
 					text = text.replace(/"use strict"/g, '');
 				}
-				injectingCachedModule = 1;
+				injectingCachedModule = true;
 				if (has('config-dojo-loader-catches')) {
 					try {
 						if (text === cached) {
@@ -1131,7 +1131,7 @@
 						req.eval(text, has('dojo-loader-eval-hint-url') ? module.url : module.mid);
 					}
 				}
-				injectingCachedModule = 0;
+				injectingCachedModule = false;
 			},
 
 			injectModule = function (module) {
@@ -1142,7 +1142,7 @@
 
 				var mid = module.mid,
 					url = module.url;
-				if (module.executed || module.injected || waiting[mid] || (module.url && ((module.pack && waiting[module.url] === module.pack) || waiting[module.url] == 1))) {
+				if (module.executed || module.injected || waiting[mid] || (module.url && ((module.pack && waiting[module.url] === module.pack) || waiting[module.url] === true))) {
 					return;
 				}
 				setRequested(module);
@@ -1177,7 +1177,7 @@
 				req.trace('loader-inject', ['script', module.mid, url]);
 				injectingModule = module;
 				req.injectUrl(fixupUrl(url), onLoadCallback, module);
-				injectingModule = 0;
+				injectingModule = false;
 			},
 
 			defineModule = function (module, deps, def) {
@@ -1270,7 +1270,7 @@
 				};
 			},
 			windowOnLoadListener = domOn(window, 'load', function () {
-				req.pageLoaded = 1;
+				req.pageLoaded = true;
 				doc.readyState !== 'complete' && (doc.readyState = 'complete');
 				windowOnLoadListener();
 			});
@@ -1352,7 +1352,7 @@
 			}
 		};
 		mix(trace, {
-			on: 1,
+			on: true,
 			group: {},
 			set: function (group, value) {
 				if (isString(group)) {
@@ -1387,9 +1387,9 @@
 		var arity = arguments.length,
 			defaultDeps = ['require', 'exports', 'module'],
 			// the predominate signature...
-			args = [0, mid, dependencies];
+			args = [null, mid, dependencies];
 		if (arity === 1) {
-			args = [0, (isFunction(mid) ? defaultDeps : []), mid];
+			args = [null, (isFunction(mid) ? defaultDeps : []), mid];
 		}
 		else if (arity === 2 && isString(mid)) {
 			args = [mid, (isFunction(dependencies) ? defaultDeps : []), dependencies];
@@ -1499,7 +1499,7 @@
 		forEach(delayedModuleConfig, function (c) { config(c); });
 		var bootDeps = dojoSniffConfig.deps || userConfig.deps || defaultConfig.deps,
 			bootCallback = dojoSniffConfig.callback || userConfig.callback || defaultConfig.callback;
-		req.boot = (bootDeps || bootCallback) ? [bootDeps || [], bootCallback] : 0;
+		req.boot = (bootDeps || bootCallback) ? [bootDeps || [], bootCallback] : null;
 	}
 	if (!has('dojo-built')) {
 		req.boot && req.apply(null, req.boot);
@@ -1517,21 +1517,21 @@
 	{
 		// the default configuration for a browser; this will be modified by other environments
 		hasCache: {
-			'host-browser': 1,
-			'dom': 1,
-			'dojo-amd-factory-scan': 1,
-			'dojo-loader': 1,
-			'dojo-has-api': 1,
-			'dojo-inject-api': 1,
-			'dojo-timeout-api': 1,
-			'dojo-trace-api': 1,
-			'dojo-log-api': 1,
-			'dojo-dom-ready-api': 1,
-			'dojo-publish-privates': 1,
-			'dojo-config-api': 1,
-			'dojo-sniff': 1,
-			'dojo-test-sniff': 1,
-			'config-deferredInstrumentation': 1,
+			'host-browser': true,
+			'dom': true,
+			'dojo-amd-factory-scan': true,
+			'dojo-loader': true,
+			'dojo-has-api': true,
+			'dojo-inject-api': true,
+			'dojo-timeout-api': true,
+			'dojo-trace-api': true,
+			'dojo-log-api': true,
+			'dojo-dom-ready-api': true,
+			'dojo-publish-privates': true,
+			'dojo-config-api': true,
+			'dojo-sniff': true,
+			'dojo-test-sniff': true,
+			'config-deferredInstrumentation': true,
 			'config-useDeferredInstrumentation': 'report-unhandled-rejections'
 		},
 		packages: [{
@@ -1559,14 +1559,14 @@
 		}],
 		trace: {
 			// these are listed so it's simple to turn them on/off while debugging loading
-			'loader-inject': 0,
-			'loader-define': 0,
-			'loader-exec-module': 0,
-			'loader-run-factory': 0,
-			'loader-finish-exec': 0,
-			'loader-define-module': 0,
-			'loader-circular-dependency': 0,
-			'loader-define-nonmodule': 0
+			'loader-inject': false,
+			'loader-define': false,
+			'loader-exec-module': false,
+			'loader-run-factory': false,
+			'loader-finish-exec': false,
+			'loader-define-module': false,
+			'loader-circular-dependency': false,
+			'loader-define-nonmodule': false
 		},
 		waitSeconds: 15
 	}
