@@ -70,26 +70,20 @@
 			return true;
 		},
 
-		toString = {}.toString,
-
-		isFunction = function (it) {
-			return toString.call(it) === '[object Function]';
+		isFunction = function (object) {
+			return typeof object === 'function';
 		},
 
-		isString = function (it) {
-			return toString.call(it) === '[object String]';
+		isString = function (object) {
+			return typeof object === 'string';
 		},
 
-		isArray = function (it) {
-			return toString.call(it) === '[object Array]';
+		isArray = function (object) {
+			return Array.isArray(object);
 		},
 
-		forEach = function (vector, callback) {
-			if (vector) {
-				for (var i = 0; i < vector.length;) {
-					callback(vector[i++]);
-				}
-			}
+		forEach = function (array, callback) {
+			array && array.forEach(callback);
 		},
 
 		mix = function (dest, src) {
@@ -733,7 +727,7 @@
 			};
 		},
 
-		getModuleInfo_ = function (mid, referenceModule, packs, modules, baseUrl, mapProgs, pathsMapProg, alwaysCreate) {
+		_getModuleInfo = function (mid, referenceModule, packs, modules, baseUrl, mapProgs, pathsMapProg, alwaysCreate) {
 			// arguments are passed instead of using lexical variables so that this function my be used independent of the loader (e.g., the builder)
 			// alwaysCreate is useful in this case so that getModuleInfo never returns references to real modules owned by the loader
 			var pid,
@@ -792,7 +786,7 @@
 					}
 				});
 				if (candidate) {
-					return getModuleInfo_(candidate, 0, packs, modules, baseUrl, mapProgs, pathsMapProg, alwaysCreate);
+					return _getModuleInfo(candidate, 0, packs, modules, baseUrl, mapProgs, pathsMapProg, alwaysCreate);
 				}
 
 				result = modules[mid];
@@ -823,7 +817,7 @@
 		},
 
 		getModuleInfo = function (mid, referenceModule) {
-			return getModuleInfo_(mid, referenceModule, packs, modules, req.baseUrl, mapProgs, pathsMapProg);
+			return _getModuleInfo(mid, referenceModule, packs, modules, req.baseUrl, mapProgs, pathsMapProg);
 		},
 
 		resolvePluginResourceId = function (plugin, prid, referenceModule) {
@@ -1457,8 +1451,7 @@
 		}
 
 		req.trace('loader-define', args.slice(0, 2));
-		var targetModule = args[0] && getModule(args[0]),
-			module;
+		var targetModule = args[0] && getModule(args[0]);
 		if (targetModule && !waiting[targetModule.mid]) {
 			// given a mid that hasn't been requested; therefore, defined through means other than injecting
 			// consequent to a require() or define() application; examples include defining modules on-the-fly
@@ -1528,7 +1521,7 @@
 			computeMapProg: computeMapProg,
 			runMapProg: runMapProg,
 			compactPath: compactPath,
-			getModuleInfo: getModuleInfo_
+			getModuleInfo: _getModuleInfo
 		});
 	}
 
