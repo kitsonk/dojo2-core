@@ -73,6 +73,9 @@ The following naming conventions MUST be used:
     <td>Remover handle</td><td>handle</td>
   </tr>
   <tr>
+    <td>Error object</td><td>error</td>
+  </tr>
+  <tr>
     <td>All others</td><td>Do not abbreviate</td>
   </tr>
 </table>
@@ -101,6 +104,7 @@ The following naming conventions MUST be used:
 ### Style
 
 Most style convention matters are addressed by the mandated jshint options.
+Those that are not are listed here:
 
 1. Opening bracket of a code block MUST be written on the same line as its
    statement:
