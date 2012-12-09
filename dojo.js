@@ -60,7 +60,7 @@
 	// The integer constant 1 is used in place of true and 0 in place of false.
 
 	// define a minimal library to help build the loader
-	var	noop = function () {},
+	var noop = function () {},
 
 		isEmpty = function (object) {
 			var k;
@@ -177,130 +177,18 @@
 		executed = 'executed';
 	}
 
-	var legacyMode = 0,
-		sync = 'sync',
-		xd = 'xd',
-		syncExecStack = [],
-		dojoRequirePlugin = 0,
-		checkDojoRequirePlugin = noop,
-		transformToAmd = noop,
-		getXhr;
-	if (has("dojo-sync-loader")) {
-		req.isXdUrl = noop;
-/*
-		req.initSyncLoader = function(dojoRequirePlugin_, checkDojoRequirePlugin_, transformToAmd_){
-			// the first dojo/_base/loader loaded gets to define these variables; they are designed to work
-			// in the presence of zero to many mapped dojo/_base/loaders
-			if(!dojoRequirePlugin){
-				dojoRequirePlugin = dojoRequirePlugin_;
-				checkDojoRequirePlugin = checkDojoRequirePlugin_;
-				transformToAmd = transformToAmd_;
-			}
-
-			return {
-				sync:sync,
-				requested:requested,
-				arrived:arrived,
-				nonmodule:nonmodule,
-				executing:executing,
-				executed:executed,
-				syncExecStack:syncExecStack,
-				modules:modules,
-				execQ:execQ,
-				getModule:getModule,
-				injectModule:injectModule,
-				setArrived:setArrived,
-				signal:signal,
-				finishExec:finishExec,
-				execModule:execModule,
-				dojoRequirePlugin:dojoRequirePlugin,
-				getLegacyMode:function(){return legacyMode;},
-				guardCheckComplete:guardCheckComplete
-			};
-		};
-
-		if(has("dom")){
-			// in legacy sync mode, the loader needs a minimal XHR library
-
-			var locationProtocol = location.protocol,
-				locationHost = location.host;
-			req.isXdUrl = function(url){
-				if(/^\./.test(url)){
-					// begins with a dot is always relative to page URL; therefore not xdomain
-					return false;
-				}
-				if(/^\/\//.test(url)){
-					// for v1.6- backcompat, url starting with // indicates xdomain
-					return true;
-				}
-				// get protocol and host
-				// \/+ takes care of the typical file protocol that looks like file:///drive/path/to/file
-				// locationHost is falsy if file protocol => if locationProtocol matches and is "file:", || will return false
-				var match = url.match(/^([^\/\:]+\:)\/+([^\/]+)/);
-				return match && (match[1] != locationProtocol || (locationHost && match[2] != locationHost));
-			};
-
-
-			// note: to get the file:// protocol to work in FF, you must set security.fileuri.strict_origin_policy to false in about:config
-			has.add("dojo-xhr-factory", 1);
-			has.add("dojo-force-activex-xhr", has("host-browser") && !doc.addEventListener && window.location.protocol == "file:");
-			has.add("native-xhr", typeof XMLHttpRequest != "undefined");
-			if(has("native-xhr") && !has("dojo-force-activex-xhr")){
-				getXhr = function(){
-					return new XMLHttpRequest();
-				};
-			}else{
-				// if in the browser an old IE; find an xhr
-				for(var XMLHTTP_PROGIDS = ['Msxml2.XMLHTTP', 'Microsoft.XMLHTTP', 'Msxml2.XMLHTTP.4.0'], progid, i = 0; i < 3;){
-					try{
-						progid = XMLHTTP_PROGIDS[i++];
-						if(new ActiveXObject(progid)){
-							// this progid works; therefore, use it from now on
-							break;
-						}
-					}catch(e){
-						// squelch; we're just trying to find a good ActiveX progid
-						// if they all fail, then progid ends up as the last attempt and that will signal the error
-						// the first time the client actually tries to exec an xhr
-					}
-				}
-				getXhr = function(){
-					return new ActiveXObject(progid);
-				};
-			}
-			req.getXhr = getXhr;
-
-			has.add("dojo-gettext-api", 1);
-			req.getText = function(url, async, onLoad){
-				var xhr = getXhr();
-				xhr.open('GET', fixupUrl(url), false);
-				xhr.send(null);
-				if(xhr.status == 200 || (!location.host && !xhr.status)){
-					if(onLoad){
-						onLoad(xhr.responseText, async);
-					}
-				}else{
-					throw makeError("xhrFailed", xhr.status);
-				}
-				return xhr.responseText;
-			};
-		}*/
-	}
-	else {
-		req.async = 1;
-	}
-
 	//
 	// loader eval
 	//
-	var eval_ =
+	req.eval = (function () {
+		/*jshint evil:true */
 		// use the function constructor so our eval is scoped close to (but not in) in the global space with minimal pollution
-		new Function('return eval(arguments[0]);');
+		var evil = new Function('return eval(arguments[0]);');
 
-	req.eval =
-		function (text, hint) {
-			return eval_(text + '\r\n////@ sourceURL=' + hint);
+		return function (text, hint) {
+			return evil(text + '\r\n////@ sourceURL=' + hint);
 		};
+	}());
 
 	//
 	// loader micro events API
@@ -513,17 +401,6 @@
 					if (p === 'baseUrl' || p === 'combo') {
 						req[p] = config[p];
 					}
-					if (has('dojo-sync-loader') && p === 'async') {
-						// falsy or "sync" => legacy sync loader
-						// "xd" => sync but loading xdomain tree and therefore loading asynchronously (not configurable, set automatically by the loader)
-						// "legacyAsync" => permanently in "xd" by choice
-						// "debugAtAllCosts" => trying to load everything via script injection (not implemented)
-						// otherwise, must be truthy => AMD
-						// legacyMode: sync | legacyAsync | xd | false
-						var mode = config[p];
-						req.legacyMode = legacyMode = (isString(mode) && /sync|legacyAsync/.test(mode) ? mode : (!mode ? sync : false));
-						req.async = !legacyMode;
-					}
 					if (config[p] !== hasCache) {
 						// accumulate raw config info for client apps which can use this to pass their own config
 						req.rawConfig[p] = config[p];
@@ -548,19 +425,6 @@
 
 				// for each package found in any packages config item, augment the packs map owned by the loader
 				forEach(config.packages, fixupPackageInfo);
-
-				// for each packagePath found in any packagePaths config item, augment the packageConfig
-				// packagePaths is deprecated; remove in 2.0
-				for (baseUrl in config.packagePaths) {
-					forEach(config.packagePaths[baseUrl], function (packageInfo) {
-						var location = baseUrl + '/' + packageInfo;
-						if (isString(packageInfo)) {
-							packageInfo = { name: packageInfo };
-						}
-						packageInfo.location = location;
-						fixupPackageInfo(packageInfo);
-					});
-				}
 
 				// notice that computeMapProg treats the dest as a reference; therefore, if/when that variable
 				// is published (see dojo-publish-privates), the published variable will always hold a valid value.
@@ -692,37 +556,11 @@
 		req.rawConfig = defaultConfig;
 	}
 
-
-	if (has('dojo-combo-api')) {
-		req.combo = req.combo || { add: noop };
-		var comboPending = 0,
-			combosPending = [],
-			comboPendingTimer = null;
-	}
-
-
 	// build the loader machinery iaw configuration, including has feature tests
 	var injectDependencies = function (module) {
 			// checkComplete!=0 holds the idle signal; we're not idle if we're injecting dependencies
 			guardCheckComplete(function () {
 				forEach(module.deps, injectModule);
-				if (has('dojo-combo-api') && comboPending && !comboPendingTimer) {
-					comboPendingTimer = setTimeout(function () {
-						comboPending = 0;
-						comboPendingTimer = null;
-						req.combo.done(function (mids, url) {
-							var onLoadCallback = function () {
-								// defQ is a vector of module definitions 1-to-1, onto mids
-								runDefQ(0, mids);
-								checkComplete();
-							};
-							combosPending.push(mids);
-							injectingModule = mids;
-							req.injectUrl(url, onLoadCallback, mids);
-							injectingModule = 0;
-						}, req);
-					}, 0);
-				}
 			});
 		},
 
@@ -775,7 +613,7 @@
 					// if already traversing a factory tree, then strict causes circular dependency to abort the execution; maybe
 					// it's possible to execute this require later after the current traversal completes and avoid the circular dependency.
 					// ...but *always* insist on immediate in synch mode
-					var strict = checkCompleteGuard && legacyMode !== sync;
+					var strict = checkCompleteGuard;
 					guardCheckComplete(function () {
 						execModule(module, strict);
 					});
@@ -811,21 +649,6 @@
 						req.undef(mid, module);
 					};
 				}
-				if (has('dojo-sync-loader')) {
-					result.syncLoadNls = function (mid) {
-						var nlsModuleInfo = getModuleInfo(mid, module),
-							nlsModule = modules[nlsModuleInfo.mid];
-						if (!nlsModule || !nlsModule.executed) {
-							cached = cache[nlsModuleInfo.mid] || cache[urlKeyPrefix + nlsModuleInfo.url];
-							if (cached) {
-								evalModuleText(cached);
-								nlsModule = modules[nlsModuleInfo.mid];
-							}
-						}
-						return nlsModule && nlsModule.executed && nlsModule.result;
-					};
-				}
-
 			}
 			return result;
 		},
@@ -859,7 +682,6 @@
 			}
 			if (isEmpty(waiting)) {
 				clearTimer();
-				has('dojo-sync-loader') && legacyMode === xd && (legacyMode = sync);
 			}
 		},
 
@@ -901,29 +723,14 @@
 		},
 
 		makeModuleInfo = function (pid, mid, pack, url) {
-			if (has('dojo-sync-loader')) {
-				var xd = req.isXdUrl(url);
-				return {
-					pid: pid,
-					mid: mid,
-					pack: pack,
-					url: url,
-					executed: 0,
-					def: 0,
-					isXd: xd,
-					isAmd: !!(xd || (packs[pid] && packs[pid].isAmd))
-				};
-			}
-			else {
-				return {
-					pid: pid,
-					mid: mid,
-					pack: pack,
-					url: url,
-					executed: 0,
-					def: 0
-				};
-			}
+			return {
+				pid: pid,
+				mid: mid,
+				pack: pack,
+				url: url,
+				executed: 0,
+				def: 0
+			};
 		},
 
 		getModuleInfo_ = function (mid, referenceModule, packs, modules, baseUrl, mapProgs, pathsMapProg, alwaysCreate) {
@@ -1038,22 +845,6 @@
 				// name was <plugin-module>!<plugin-resource-id>
 				plugin = getModule(match[1], referenceModule, immediate);
 
-				if (has('dojo-sync-loader') && legacyMode === sync && !plugin.executed) {
-					injectModule(plugin);
-					if (plugin.injected === arrived && !plugin.executed) {
-						guardCheckComplete(function () {
-							execModule(plugin);
-						});
-					}
-					if (plugin.executed) {
-						promoteModuleToPlugin(plugin);
-					}
-					else {
-						// we are in xdomain mode for some reason
-						execQ.unshift(plugin);
-					}
-				}
-
 				if (plugin.executed === executed && !plugin.load) {
 					// executed the module not knowing it was a plugin
 					promoteModuleToPlugin(plugin);
@@ -1117,7 +908,6 @@
 			req.trace('loader-run-factory', [module.mid]);
 			var factory = module.def,
 				result;
-			has('dojo-sync-loader') && syncExecStack.unshift(module);
 			if (has('config-dojo-loader-catches')) {
 				try {
 					result = isFunction(factory) ? factory.apply(null, args) : factory;
@@ -1130,7 +920,6 @@
 				result = isFunction(factory) ? factory.apply(null, args) : factory;
 			}
 			module.result = result === undefined && module.cjs ? module.cjs.exports : result;
-			has('dojo-sync-loader') && syncExecStack.shift(module);
 		},
 
 		abortExec = {},
@@ -1189,7 +978,6 @@
 			req.trace('loader-finish-exec', [module.mid]);
 			module.executed = executed;
 			module.defOrder = defOrder++;
-			has('dojo-sync-loader') && forEach(module.provides, function (cb) { cb(); });
 			if (module.loadQ) {
 				// the module was a plugin
 				promoteModuleToPlugin(module);
@@ -1289,7 +1077,6 @@
 				return;
 			}
 			guardCheckComplete(function () {
-				checkDojoRequirePlugin();
 				for (var currentDefOrder, module, i = 0; i < execQ.length;) {
 					currentDefOrder = defOrder;
 					module = execQ[i];
@@ -1297,7 +1084,6 @@
 					if (currentDefOrder !== defOrder) {
 						// defOrder was bumped one or more times indicating something was executed (note, this indicates
 						// the execQ was modified, maybe a lot (for example a later module causes an earlier module to execute)
-						checkDojoRequirePlugin();
 						i = 0;
 					}
 					else {
@@ -1413,25 +1199,6 @@
 				}
 				setRequested(module);
 
-				if (has('dojo-combo-api')) {
-					var viaCombo = 0;
-					if (module.plugin && module.plugin.isCombo) {
-						// a combo plugin; therefore, must be handled by combo service
-						// the prid should have already been converted to a URL (if required by the plugin) during
-						// the normalize process; in any event, there is no way for the loader to know how to
-						// to the conversion; therefore the third argument is zero
-						req.combo.add(module.plugin.mid, module.prid, 0, req);
-						viaCombo = 1;
-					}
-					else if (!module.plugin) {
-						viaCombo = req.combo.add(0, module.mid, module.url, req);
-					}
-					if (viaCombo) {
-						comboPending = 1;
-						return;
-					}
-				}
-
 				if (module.plugin) {
 					injectPlugin(module);
 					return;
@@ -1449,15 +1216,7 @@
 						req.trace('loader-define-nonmodule', [module.url]);
 					}
 
-					if (has('dojo-sync-loader') && legacyMode) {
-						// must call checkComplete even in for sync loader because we may be in xdomainLoading mode;
-						// but, if xd loading, then don't call checkComplete until out of the current sync traversal
-						// in order to preserve order of execution of the dojo.required modules
-						!syncExecStack.length && checkComplete();
-					}
-					else {
-						checkComplete();
-					}
+					checkComplete();
 				};
 				cached = cache[mid] || cache[urlKeyPrefix + module.url];
 				if (cached) {
@@ -1466,82 +1225,7 @@
 					onLoadCallback();
 					return;
 				}
-/*				if (has('dojo-sync-loader') && legacyMode) {
-					if (module.isXd) {
-						// switch to async mode temporarily; if current legacyMode!=sync, then is must be one of {legacyAsync, xd, false}
-						legacyMode==sync && (legacyMode = xd);
-						// fall through and load via script injection
-					}else if(module.isAmd && legacyMode!=sync){
-						// fall through and load via script injection
-					}else{
-						// mode may be sync, xd/legacyAsync, or async; module may be AMD or legacy; but module is always located on the same domain
-						var xhrCallback = function(text){
-							if(legacyMode==sync){
-								// the top of syncExecStack gives the current synchronously executing module; the loader needs
-								// to know this if it has to switch to async loading in the middle of evaluating a legacy module
-								// this happens when a modules dojo.require's a module that must be loaded async because it's xdomain
-								// (using unshift/shift because there is no back() methods for Javascript arrays)
-								syncExecStack.unshift(module);
-								evalModuleText(text, module);
-								syncExecStack.shift();
 
-								// maybe the module was an AMD module
-								runDefQ(module);
-
-								// legacy modules never get to defineModule() => cjs and injected never set; also evaluation implies executing
-								if(!module.cjs){
-									setArrived(module);
-									finishExec(module);
-								}
-
-								if(module.finish){
-									// while synchronously evaluating this module, dojo.require was applied referencing a module
-									// that had to be loaded async; therefore, the loader stopped answering all dojo.require
-									// requests so they could be answered completely in the correct sequence; module.finish gives
-									// the list of dojo.requires that must be re-applied once all target modules are available;
-									// make a synthetic module to execute the dojo.require's in the correct order
-
-									// compute a guaranteed-unique mid for the synthetic finish module; remember the finish vector; remove it from the reference module
-									// TODO: can we just leave the module.finish...what's it hurting?
-									var finishMid = mid + '*finish',
-										finish = module.finish;
-									delete module.finish;
-
-									def(finishMid, ['dojo', ('dojo/require!' + finish.join(',')).replace(/\./g, '/')], function(dojo){
-										forEach(finish, function(mid){ dojo.require(mid); });
-									});
-									// unshift, not push, which causes the current traversal to be reattempted from the top
-									execQ.unshift(getModule(finishMid));
-								}
-								onLoadCallback();
-							}else{
-								text = transformToAmd(module, text);
-								if(text){
-									evalModuleText(text, module);
-									onLoadCallback();
-								}else{
-									// if transformToAmd returned falsy, then the module was already AMD and it can be script-injected
-									// do so to improve debugability(even though it means another download...which probably won't happen with a good browser cache)
-									injectingModule = module;
-									req.injectUrl(fixupUrl(url), onLoadCallback, module);
-									injectingModule = 0;
-								}
-							}
-						};
-
-						req.trace('loader-inject', ['xhr', module.mid, url, legacyMode!=sync]);
-						if(has('config-dojo-loader-catches')){
-							try{
-								req.getText(url, legacyMode!=sync, xhrCallback);
-							}catch(e){
-								signal(error, makeError('xhrInjectFailed', [module, e]));
-							}
-						}else{
-							req.getText(url, legacyMode!=sync, xhrCallback);
-						}
-						return;
-					}
-				} // else async mode or fell through in xdomain loading mode; either way, load by script injection*/
 				req.trace('loader-inject', ['script', module.mid, url]);
 				injectingModule = module;
 				req.injectUrl(fixupUrl(url), onLoadCallback, module);
@@ -1551,17 +1235,6 @@
 			defineModule = function (module, deps, def) {
 				req.trace('loader-define-module', [module.mid, deps]);
 
-				if (has('dojo-combo-api') && module.plugin && module.plugin.isCombo) {
-					// the module is a plugin resource loaded by the combo service
-					// note: check for module.plugin should be enough since normal plugin resources should
-					// not follow this path; module.plugin.isCombo is future-proofing belt and suspenders
-					module.result = isFunction(def) ? def() : def;
-					setArrived(module);
-					finishExec(module);
-					return module;
-				}
-
-				var mid = module.mid;
 				if (module.injected === arrived) {
 					signal(error, makeError('multipleDefine', module));
 					return module;
@@ -1587,12 +1260,6 @@
 					deps[i] = getModule(deps[i], module);
 				}
 
-				if (has('dojo-sync-loader') && legacyMode && !waiting[mid]) {
-					// the module showed up without being asked for; it was probably in a <script> element
-					injectDependencies(module);
-					execQ.push(module);
-					checkComplete();
-				}
 				setArrived(module);
 
 				if (!isFunction(def) && !deps.length) {
@@ -1771,11 +1438,12 @@
 		req.trace = noop;
 	}
 
-	var def = function (
-		mid,		  //(commonjs.moduleId, optional) list of modules to be loaded before running factory
-		dependencies, //(array of commonjs.moduleId, optional)
-		factory		  //(any)
-	) {
+	/**
+	 * @param mid //(commonjs.moduleId, optional) list of modules to be loaded before running factory
+	 * @param dependencies //(array of commonjs.moduleId, optional)
+	 * @param factory //(any)
+	 */
+	var def = function (mid, dependencies, factory) {
 		///
 		// Advises the loader of a module factory. //Implements http://wiki.commonjs.org/wiki/Modules/AsynchronousDefinition.
 		///
@@ -1832,23 +1500,8 @@
 						break;
 					}
 				}
-				if (has('dojo-combo-api') && !targetModule) {
-					for (var i = 0; i < combosPending.length; i++) {
-						targetModule = combosPending[i];
-						if (targetModule.node && targetModule.node.readyState === 'interactive') {
-							break;
-						}
-						targetModule = 0;
-					}
-				}
 			}
-			if (has('dojo-combo-api') && isArray(targetModule)) {
-				injectDependencies(defineModule(getModule(targetModule.shift()), args[1], args[2]));
-				if (!targetModule.length) {
-					combosPending.splice(i, 1);
-				}
-			}
-			else if (targetModule) {
+			if (targetModule) {
 				consumePendingCacheInsert(targetModule);
 				injectDependencies(defineModule(targetModule, args[1], args[2]));
 			}
@@ -1898,7 +1551,6 @@
 			paths: paths,
 			aliases: aliases,
 			modules: modules,
-			legacyMode: legacyMode,
 			execQ: execQ,
 			defQ: defQ,
 			waiting: waiting,
@@ -1934,14 +1586,6 @@
 		}
 	}
 
-	if (has('dojo-combo-api') && req.combo && req.combo.plugins) {
-		var plugins = req.combo.plugins,
-			pluginName;
-		for (pluginName in plugins) {
-			mix(mix(getModule(pluginName), plugins[pluginName]), { isCombo: 1, executed: 'executed', load: 1 });
-		}
-	}
-
 	if (has('dojo-config-api')) {
 		forEach(delayedModuleConfig, function (c) { config(c); });
 		var bootDeps = dojoSniffConfig.deps || userConfig.deps || defaultConfig.deps,
@@ -1949,7 +1593,6 @@
 		req.boot = (bootDeps || bootCallback) ? [bootDeps || [], bootCallback] : 0;
 	}
 	if (!has('dojo-built')) {
-		!req.async && req(['dojo']);
 		req.boot && req.apply(null, req.boot);
 	}
 })
@@ -1978,7 +1621,6 @@
 			'dojo-publish-privates': 1,
 			'dojo-config-api': 1,
 			'dojo-sniff': 1,
-			'dojo-sync-loader': 1,
 			'dojo-test-sniff': 1,
 			'config-deferredInstrumentation': 1,
 			'config-useDeferredInstrumentation': 'report-unhandled-rejections',
@@ -2018,7 +1660,6 @@
 			'loader-circular-dependency': 0,
 			'loader-define-nonmodule': 0
 		},
-		async: 0,
 		waitSeconds: 15
 	}
 );
