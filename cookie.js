@@ -94,8 +94,7 @@ define([], function () {
 		return null;
 	}
 
-	var cookie = document.cookie,
-		longAgo = new Date(1970, 0, 1).toUTCString();
+	var longAgo = new Date(1970, 0, 1).toUTCString();
 
 	/**
 	 * An interface for getting and setting cookies based on the DOM Storage API.
@@ -105,7 +104,7 @@ define([], function () {
 		 * The number of cookies that are currently set.
 		 */
 		get length() {
-			return count(cookie, '; ');
+			return count(document.cookie, '; ');
 		},
 
 		/**
@@ -113,7 +112,7 @@ define([], function () {
 		 * @returns {?string}
 		 */
 		key: function (/**number*/ index) {
-			var keyValuePair = cookie.split('; ')[index];
+			var keyValuePair = document.cookie.split('; ')[index];
 			return keyValuePair ? /^([^=]+)/.exec(keyValuePair)[0] : null;
 		},
 
@@ -122,7 +121,7 @@ define([], function () {
 		 * @returns {?string}
 		 */
 		getItem: function (/**string*/ key) {
-			var match = new RegExp('(?:^|; )' + escapeString(key) + '=([^;]*)').exec(cookie);
+			var match = new RegExp('(?:^|; )' + escapeString(key) + '=([^;]*)').exec(document.cookie);
 			return match ? decodeURIComponent(match[1]) : null;
 		},
 
