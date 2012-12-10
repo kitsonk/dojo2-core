@@ -94,8 +94,8 @@
 			return dest;
 		},
 
-		makeError = function (error, info) {
-			return mix(new Error(error), { src: 'dojoLoader', info: info });
+		makeError = function (message, info) {
+			return mix(new Error(message), { src: 'dojoLoader', info: info });
 		},
 
 		// this will be the global require function; define it immediately so we can start hanging things off of it
@@ -171,12 +171,12 @@
 	//
 	var listenerQueues = {},
 		ERROR = 'error',
-		signal = req.signal = function (type, args) {
+		emit = req.emit = function (type, args) {
 			var queue = listenerQueues[type];
 			// notice we run a copy of the queue; this allows listeners to add/remove
 			// other listeners without affecting this particular signal
 			forEach(queue && queue.slice(0), function (listener) {
-				listener.apply(null, isArray(args) ? args : [args]);
+				listener.apply(null, isArray(args) ? args : [ args ]);
 			});
 		},
 		on = req.on = function (type, listener) {
@@ -198,84 +198,76 @@
 	// configuration machinery; with an optimized/built defaultConfig, all configuration machinery can be discarded
 	// lexical variables hold key loader data structures to help with minification; these may be completely,
 	// one-time initialized by defaultConfig for optimized/built versions
-	var pathsMapProg
-			// list of (from-path, to-path, regex, length) derived from paths;
-			// a "program" to apply paths; see computeMapProg
-			= [],
 
-		packs
-			// a map from packageId to package configuration object; see fixupPackageInfo
-			= {},
+	// array of [ from-path, to-path, regex, length ] path mappings;
+	// a "program" to apply paths; see computeMapProg
+	var pathsMapProg = [],
 
-		map = req.map
-			// AMD map config variable; dojo/_base/kernel needs req.map to figure out the scope map
-			= {},
+		// a map from packageId to package configuration object; see fixupPackageInfo
+		packs = {},
 
-		mapProgs
-			// array of quads as described by computeMapProg; map-key is AMD map key, map-value is AMD map value
-			= [],
+		// AMD map config variable; dojo/_base/kernel needs req.map to figure out the scope map
+		map = req.map = {},
 
-		modules
-			// A hash:(mid) --> (module-object) the module namespace
-			//
-			// pid: the package identifier to which the module belongs (e.g., "dojo"); "" indicates the system or default package
-			// mid: the fully-resolved (i.e., mappings have been applied) module identifier without the package identifier (e.g., "dojo/io/script")
-			// url: the URL from which the module was retrieved
-			// pack: the package object of the package to which the module belongs
-			// executed: false => not executed; "executing" => in the process of traversing deps and running factory; "executed" => factory has been executed
-			// deps: the dependency array for this module (array of modules objects)
-			// def: the factory for this module
-			// result: the result of the running the factory for this module
-			// injected: (false | "requested" | "arrived") the status of the module; "non-module" means the resource did not call define
-			// load: plugin load function; applicable only for plugins
-			//
-			// Modules go through several phases in creation:
-			//
-			// 1. Requested: some other module's definition or a require application contained the requested module in
-			//    its dependency array or executing code explicitly demands a module via req.require.
-			//
-			// 2. Injected: a script element has been appended to the insert-point element demanding the resource implied by the URL
-			//
-			// 3. Loaded: the resource injected in [2] has been evaluated.
-			//
-			// 4. Defined: the resource contained a define statement that advised the loader about the module. Notice that some
-			//    resources may just contain a bundle of code and never formally define a module via define
-			//
-			// 5. Evaluated: the module was defined via define and the loader has evaluated the factory and computed a result.
-			= {},
+		// array of quads as described by computeMapProg; map-key is AMD map key, map-value is AMD map value
+		mapProgs = [],
 
-		cacheBust
-			// query string to append to module URLs to bust browser cache
-			= '',
+		// A hash:(mid) --> (module-object) the module namespace
+		//
+		// pid: the package identifier to which the module belongs (e.g., "dojo"); "" indicates the system or default package
+		// mid: the fully-resolved (i.e., mappings have been applied) module identifier without the package identifier (e.g., "dojo/io/script")
+		// url: the URL from which the module was retrieved
+		// pack: the package object of the package to which the module belongs
+		// executed: false => not executed; "executing" => in the process of traversing deps and running factory; "executed" => factory has been executed
+		// deps: the dependency array for this module (array of modules objects)
+		// def: the factory for this module
+		// result: the result of the running the factory for this module
+		// injected: (false | "requested" | "arrived") the status of the module; "non-module" means the resource did not call define
+		// load: plugin load function; applicable only for plugins
+		//
+		// Modules go through several phases in creation:
+		//
+		// 1. Requested: some other module's definition or a require application contained the requested module in
+		//    its dependency array or executing code explicitly demands a module via req.require.
+		//
+		// 2. Injected: a script element has been appended to the insert-point element demanding the resource implied by the URL
+		//
+		// 3. Loaded: the resource injected in [2] has been evaluated.
+		//
+		// 4. Defined: the resource contained a define statement that advised the loader about the module. Notice that some
+		//    resources may just contain a bundle of code and never formally define a module via define
+		//
+		// 5. Evaluated: the module was defined via define and the loader has evaluated the factory and computed a result.
+		modules = {},
 
-		cache
-			// hash:(mid | url)-->(function | string)
-			//
-			// A cache of resources. The resources arrive via a config.cache object, which is a hash from either mid --> function or
-			// url --> string. The url key is distinguished from the mid key by always containing the prefix "url:". url keys as provided
-			// by config.cache always have a string value that represents the contents of the resource at the given url. mid keys as provided
-			// by configl.cache always have a function value that causes the same code to execute as if the module was script injected.
-			//
-			// Both kinds of key-value pairs are entered into cache via the function consumePendingCache, which may relocate keys as given
-			// by any mappings *iff* the config.cache was received as part of a module resource request.
-			//
-			// Further, for mid keys, the implied url is computed and the value is entered into that key as well. This allows mapped modules
-			// to retrieve cached items that may have arrived consequent to another namespace.
-			//
-			 = {},
+		// query string to append to module URLs to bust browser cache
+		cacheBust = '',
 
-		urlKeyPrefix
-			// the prefix to prepend to a URL key in the cache.
-			= 'url:',
+		// hash:(mid | url)-->(function | string)
+		//
+		// A cache of resources. The resources arrive via a config.cache object, which is a hash from either mid --> function or
+		// url --> string. The url key is distinguished from the mid key by always containing the prefix "url:". url keys as provided
+		// by config.cache always have a string value that represents the contents of the resource at the given url. mid keys as provided
+		// by configl.cache always have a function value that causes the same code to execute as if the module was script injected.
+		//
+		// Both kinds of key-value pairs are entered into cache via the function consumePendingCache, which may relocate keys as given
+		// by any mappings *iff* the config.cache was received as part of a module resource request.
+		//
+		// Further, for mid keys, the implied url is computed and the value is entered into that key as well. This allows mapped modules
+		// to retrieve cached items that may have arrived consequent to another namespace.
+		//
+		cache = {},
 
-		pendingCacheInsert
-			// hash:(mid)-->(function)
-			//
-			// Gives a set of cache modules pending entry into cache. When cached modules are published to the loader, they are
-			// entered into pendingCacheInsert; modules are then pressed into cache upon (1) AMD define or (2) upon receiving another
-			// independent set of cached modules. (1) is the usual case, and this case allows normalizing mids given in the pending
-			// cache for the local configuration, possibly relocating modules.
-			 = {};
+		// the prefix to prepend to a URL key in the cache.
+		urlKeyPrefix = 'url:',
+
+		// hash:(mid)-->(function)
+		//
+		// Gives a set of cache modules pending entry into cache. When cached modules are published to the loader, they are
+		// entered into pendingCacheInsert; modules are then pressed into cache upon (1) AMD define or (2) upon receiving another
+		// independent set of cached modules. (1) is the usual case, and this case allows normalizing mids given in the pending
+		// cache for the local configuration, possibly relocating modules.
+		pendingCacheInsert = {};
 
 	if (has('dojo-config-api')) {
 		var consumePendingCacheInsert = function (referenceModule) {
@@ -283,7 +275,7 @@
 					item,
 					match,
 					now,
-					m;
+					moduleInfo;
 
 				for (k in pendingCacheInsert) {
 					item = pendingCacheInsert[k];
@@ -293,8 +285,8 @@
 					} else if (k === '*now') {
 						now = item;
 					} else if (k !== '*noref') {
-						m = getModuleInfo(k, referenceModule);
-						cache[m.mid] = cache[urlKeyPrefix + m.url] = item;
+						moduleInfo = getModuleInfo(k, referenceModule);
+						cache[moduleInfo.mid] = cache[urlKeyPrefix + moduleInfo.url] = item;
 					}
 				}
 				if (now) {
@@ -355,13 +347,10 @@
 
 			config = function (config, booting, referenceModule) {
 				for (var k in config) {
-					if (k === 'waitSeconds') {
-						req.waitms = (config[k] || 0) * 1000;
-					}
 					if (k === 'cacheBust') {
-						cacheBust = config[k] ? (isString(config[k]) ? config[k] : (new Date()).getTime() + '') : '';
+						cacheBust = config[k] ? (isString(config[k]) ? config[k] : Date.now() + '') : '';
 					}
-					if (k === 'baseUrl' || k === 'combo') {
+					if (k === 'baseUrl') {
 						req[k] = config[k];
 					}
 					if (config[k] !== hasCache) {
@@ -376,7 +365,7 @@
 					req.baseUrl = './';
 				}
 				// make sure baseUrl ends with a slash
-				if (!/\/$/.test(req.baseUrl)) {
+				if (req.baseUrl.charAt(req.baseUrl.length - 1) !== '/') {
 					req.baseUrl += '/';
 				}
 
@@ -420,7 +409,7 @@
 					}
 				}
 
-				signal('config', [config, req.rawConfig]);
+				emit('config', [ config, req.rawConfig ]);
 			};
 
 		//
@@ -480,6 +469,7 @@
 		},
 
 		uid = 0,
+
 		contextRequire = function (a1, a2, a3, referenceModule, contextRequire) {
 			var module, syntheticMid;
 			if (isString(a1)) {
@@ -569,17 +559,14 @@
 			return result;
 		},
 
-		execQ =
-			// The list of modules that need to be evaluated.
-			[],
+		// The list of modules that need to be evaluated.
+		execQ = [],
 
-		defQ =
-			// The queue of define arguments sent to loader.
-			[],
+		// The queue of define arguments sent to loader.
+		defQ = [],
 
-		waiting =
-			// The set of modules upon which the loader is waiting for definition to arrive
-			{},
+		// The set of modules upon which the loader is waiting for definition to arrive
+		waiting = {},
 
 		setRequested = function (module) {
 			module.injected = REQUESTED;
@@ -587,7 +574,6 @@
 			if (module.url) {
 				waiting[module.url] = module.pack || true;
 			}
-			startTimer();
 		},
 
 		setArrived = function (module) {
@@ -596,16 +582,12 @@
 			if (module.url) {
 				delete waiting[module.url];
 			}
-			if (isEmpty(waiting)) {
-				clearTimer();
-			}
 		},
 
-		execComplete = req.idle =
-			// says the loader has completed (or not) its work
-			function () {
-				return !defQ.length && isEmpty(waiting) && !execQ.length && !checkCompleteGuard;
-			},
+		// says the loader has completed (or not) its work
+		execComplete = req.idle = function () {
+			return !defQ.length && isEmpty(waiting) && !execQ.length && !checkCompleteGuard;
+		},
 
 		runMapProg = function (targetMid, map) {
 			// search for targetMid in map; return the map item if found; falsy otherwise
@@ -785,7 +767,7 @@
 				// if pid===null, then name had a protocol or absolute path; either way, toUrl is the identify function in such cases
 				name :
 				// "/x.js" since getModuleInfo automatically appends ".js" and we appended "/x" to make name look like a module id
-				url.substring(0, url.length - 5)
+				url.slice(0, url.length - 5)
 			);
 		},
 
@@ -805,7 +787,7 @@
 		cjsModuleModule = makeCjs('module'),
 
 		runFactory = function (module, args) {
-			req.trace('loader-run-factory', [module.mid]);
+			req.trace('loader-run-factory', [ module.mid ]);
 			var factory = module.def,
 				result;
 			if (has('config-dojo-loader-catches')) {
@@ -813,7 +795,7 @@
 					result = isFunction(factory) ? factory.apply(null, args) : factory;
 				}
 				catch (e) {
-					signal(ERROR, module.result = makeError('factoryThrew', [module, e]));
+					emit(ERROR, module.result = makeError('factoryThrew', [ module, e ]));
 				}
 			}
 			else {
@@ -875,7 +857,7 @@
 		},
 
 		finishExec = function (module) {
-			req.trace('loader-finish-exec', [module.mid]);
+			req.trace('loader-finish-exec', [ module.mid ]);
 			module.executed = EXECUTED;
 			module.defOrder = defOrder++;
 			if (module.loadQ) {
@@ -903,7 +885,7 @@
 		execModule = function (module, strict) {
 			// run the dependency array, then run the factory for module
 			if (module.executed === EXECUTING) {
-				req.trace('loader-circular-dependency', [circleTrace.concat(module.mid).join('->')]);
+				req.trace('loader-circular-dependency', [ circleTrace.concat(module.mid).join('->') ]);
 				return (!module.def || strict) ? abortExec : (module.cjs && module.cjs.exports);
 			}
 
@@ -920,7 +902,7 @@
 
 				if (has('dojo-trace-api')) {
 					circleTrace.push(mid);
-					req.trace('loader-exec-module', ['exec', circleTrace.length, mid]);
+					req.trace('loader-exec-module', [ 'exec', circleTrace.length, mid ]);
 				}
 
 				// for circular dependencies, assume the first module encountered was executed OK
@@ -938,7 +920,7 @@
 											execModule(arg, strict))));
 					if (argResult === abortExec) {
 						module.executed = false;
-						req.trace('loader-exec-module', ['abort', mid]);
+						req.trace('loader-exec-module', [ 'abort', mid ]);
 						has('dojo-trace-api') && circleTrace.pop();
 						return abortExec;
 					}
@@ -965,7 +947,7 @@
 				checkCompleteGuard--;
 			}
 			if (execComplete()) {
-				signal('idle', []);
+				emit('idle', []);
 			}
 		},
 
@@ -1041,7 +1023,7 @@
 					// dependencies of some other module because this may cause circles when the plugin
 					// loadQ is run; also, generally, we want plugins to run early since they may load
 					// several other modules and therefore can potentially unblock many modules
-					plugin.loadQ = [module];
+					plugin.loadQ = [ module ];
 					execQ.unshift(plugin);
 					injectModule(plugin);
 				}
@@ -1071,7 +1053,7 @@
 						}
 					}
 					catch (e) {
-						signal(ERROR, makeError('evalModuleThrew', module));
+						emit(ERROR, makeError('evalModuleThrew', module));
 					}
 				}
 				else {
@@ -1112,30 +1094,30 @@
 						// therefore, it must not have been a module; adjust state accordingly
 						setArrived(module);
 						mix(module, nonModuleProps);
-						req.trace('loader-define-nonmodule', [module.url]);
+						req.trace('loader-define-nonmodule', [ module.url ]);
 					}
 
 					checkComplete();
 				};
 				cached = cache[mid] || cache[urlKeyPrefix + module.url];
 				if (cached) {
-					req.trace('loader-inject', ['cache', module.mid, url]);
+					req.trace('loader-inject', [ 'cache', module.mid, url ]);
 					evalModuleText(cached, module);
 					onLoadCallback();
 					return;
 				}
 
-				req.trace('loader-inject', ['script', module.mid, url]);
+				req.trace('loader-inject', [ 'script', module.mid, url ]);
 				injectingModule = module;
 				req.injectUrl(fixupUrl(url), onLoadCallback, module);
 				injectingModule = false;
 			},
 
 			defineModule = function (module, deps, def) {
-				req.trace('loader-define-module', [module.mid, deps]);
+				req.trace('loader-define-module', [ module.mid, deps ]);
 
 				if (module.injected === ARRIVED) {
-					signal(ERROR, makeError('multipleDefine', module));
+					emit(ERROR, makeError('multipleDefine', module));
 					return module;
 				}
 				mix(module, {
@@ -1170,7 +1152,7 @@
 			},
 
 			runDefQ = function (referenceModule, mids) {
-				// defQ is an array of [id, dependencies, factory]
+				// defQ is an array of [ id, dependencies, factory ]
 				// mids (if any) is a array of mids given by a combo service
 				var definedModules = [],
 					module, args;
@@ -1181,34 +1163,13 @@
 					// processed since modules earlier in the queue depend on already-arrived modules that are later in the queue
 					// TODO: what if no args[0] and no referenceModule
 					module = (args[0] && getModule(args[0])) || referenceModule;
-					definedModules.push([module, args[1], args[2]]);
+					definedModules.push([ module, args[1], args[2] ]);
 				}
 				consumePendingCacheInsert(referenceModule);
 				forEach(definedModules, function (args) {
 					injectDependencies(defineModule.apply(null, args));
 				});
 			};
-	}
-
-	var timerId = 0,
-		clearTimer = noop,
-		startTimer = noop;
-	if (has('dojo-timeout-api')) {
-		// Timer machinery that monitors how long the loader is waiting and signals an error when the timer runs out.
-		clearTimer = function () {
-			timerId && clearTimeout(timerId);
-			timerId = 0;
-		};
-
-		startTimer = function () {
-			clearTimer();
-			if (req.waitms) {
-				timerId = window.setTimeout(function () {
-					clearTimer();
-					signal(ERROR, makeError('timeout', waiting));
-				}, req.waitms);
-			}
-		};
 	}
 
 	if (has('dom') && (has('dojo-inject-api') || has('dojo-dom-ready-api'))) {
@@ -1240,7 +1201,7 @@
 					errorDisconnector = domOn(node, 'error', function (e) {
 						loadDisconnector();
 						errorDisconnector();
-						signal(ERROR, makeError('scriptError', [url, e]));
+						emit(ERROR, makeError('scriptError', [ url, e ]));
 					});
 
 				node.charset = 'utf-8';
@@ -1276,7 +1237,7 @@
 			// Sends the contents of args to the console iff (req.trace.on && req.trace[group])
 
 			if (trace.on && trace.group[group]) {
-				signal('trace', [group, args]);
+				emit('trace', [ group, args ]);
 				for (var arg, dump = [], text = 'trace:' + group + (args.length ? (':' + args[0]) : ''), i = 1; i < args.length;) {
 					arg = args[i++];
 					if (isString(arg)) {
@@ -1327,15 +1288,15 @@
 		var arity = arguments.length,
 			defaultDeps = ['require', 'exports', 'module'],
 			// the predominate signature...
-			args = [null, mid, dependencies];
+			args = [ null, mid, dependencies ];
 		if (arity === 1) {
-			args = [null, (isFunction(mid) ? defaultDeps : []), mid];
+			args = [ null, (isFunction(mid) ? defaultDeps : []), mid ];
 		}
 		else if (arity === 2 && isString(mid)) {
-			args = [mid, (isFunction(dependencies) ? defaultDeps : []), dependencies];
+			args = [ mid, (isFunction(dependencies) ? defaultDeps : []), dependencies ];
 		}
 		else if (arity === 3) {
-			args = [mid, dependencies, factory];
+			args = [ mid, dependencies, factory ];
 		}
 
 		if (has('dojo-amd-factory-scan') && args[1] === defaultDeps) {
@@ -1377,16 +1338,7 @@
 
 	// now that req is fully initialized and won't change, we can hook it up to the error signal
 	on(ERROR, function (arg) {
-		try {
-			console.error(arg);
-			if (arg instanceof Error) {
-				for (var k in arg) {
-					console.log(k + ':', arg[k]);
-				}
-				console.log('.');
-			}
-		}
-		catch (e) {}
+		console.error(arg);
 	});
 
 	// always publish these
@@ -1422,7 +1374,7 @@
 	// *required* to define (as opposed to require, which is optional)
 	if (global.define) {
 		if (has('dojo-log-api')) {
-			signal(ERROR, makeError('defineAlreadyDefined', 0));
+			emit(ERROR, makeError('defineAlreadyDefined', 0));
 		}
 		return;
 	}
@@ -1438,7 +1390,7 @@
 		forEach(delayedModuleConfig, function (c) { config(c); });
 		var bootDeps = userConfig.deps || defaultConfig.deps,
 			bootCallback = userConfig.callback || defaultConfig.callback;
-		req.boot = (bootDeps || bootCallback) ? [bootDeps || [], bootCallback] : null;
+		req.boot = (bootDeps || bootCallback) ? [ bootDeps || [], bootCallback ] : null;
 	}
 	if (!has('dojo-built')) {
 		req.boot && req.apply(null, req.boot);
@@ -1464,7 +1416,6 @@
 			'dojo-loader': true,
 			'dojo-has-api': true,
 			'dojo-inject-api': true,
-			'dojo-timeout-api': true,
 			'dojo-trace-api': true,
 			'dojo-log-api': true,
 			'dojo-dom-ready-api': true,
@@ -1478,24 +1429,6 @@
 			// note: like v1.6-, this bootstrap computes baseUrl to be the dojo directory
 			name: 'dojo',
 			location: '.'
-		}, {
-			name: 'tests',
-			location: './tests'
-		}, {
-			name: 'dijit',
-			location: '../dijit'
-		}, {
-			name: 'build',
-			location: '../util/build'
-		}, {
-			name: 'doh',
-			location: '../util/doh'
-		}, {
-			name: 'dojox',
-			location: '../dojox'
-		}, {
-			name: 'demos',
-			location: '../demos'
 		}],
 		trace: {
 			// these are listed so it's simple to turn them on/off while debugging loading
@@ -1507,8 +1440,7 @@
 			'loader-define-module': false,
 			'loader-circular-dependency': false,
 			'loader-define-nonmodule': false
-		},
-		waitSeconds: 15
+		}
 	}
 );
 //>>excludeEnd("replaceLoaderConfig")
