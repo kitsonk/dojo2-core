@@ -1,6 +1,6 @@
 define([ './has' ], function (has) {
 	/**
-	 * The kernel module provides functionality for providing information to users about this release of Dojo.
+	 * An interface for providing information to users about this release of Dojo.
 	 */
 	var kernel = {};
 
