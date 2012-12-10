@@ -494,7 +494,7 @@
 					a2 && a2();
 				}
 				else {
-					syntheticMid = 'require*' + (uid++);
+					syntheticMid = 'require*' + (++uid);
 
 					// resolve the request list with respect to the reference module
 					for (var mid, deps = [], i = 0; i < a1.length;) {
@@ -645,7 +645,7 @@
 
 			requestedMid = mid;
 			isRelative = /^\./.test(mid);
-			if (/(^\/)|(\:)|(\.js$)/.test(mid) || (isRelative && !referenceModule)) {
+			if (/(?:^\/)|(?:\:)|(?:\.js$)/.test(mid) || (isRelative && !referenceModule)) {
 				// absolute path or protocol of .js filetype, or relative path but no reference module and therefore relative to page
 				// whatever it is, it's not a module but just a URL of some sort
 				// note: pid===null indicates the routine is returning an unmodified mid
@@ -717,11 +717,12 @@
 			}) : toAbsMid(prid, referenceModule);
 		},
 
-		dynamicPluginUidGenerator = 0,
-
 		getModule = function (mid, referenceModule, immediate) {
 			// compute and optionally construct (if necessary) the module implied by the mid with respect to referenceModule
-			var match, plugin, prid, result;
+			var match,
+				plugin,
+				prid,
+				result;
 			match = mid.match(/^(.+?)\!(.*)$/);
 			if (match) {
 				// name was <plugin-module>!<plugin-resource-id>
@@ -735,11 +736,11 @@
 				// if the plugin has not been loaded, then can't resolve the prid and must assume this plugin is dynamic until we find out otherwise
 				if (plugin.load) {
 					prid = resolvePluginResourceId(plugin, match[2], referenceModule);
-					mid = (plugin.mid + '!' + (plugin.dynamic ? ++dynamicPluginUidGenerator + '!' : '') + prid);
+					mid = (plugin.mid + '!' + (plugin.dynamic ? ++uid + '!' : '') + prid);
 				}
 				else {
 					prid = match[2];
-					mid = plugin.mid + '!' + (++dynamicPluginUidGenerator) + '!waitingForPlugin';
+					mid = plugin.mid + '!' + (++uid) + '!waitingForPlugin';
 				}
 
 				result = {
