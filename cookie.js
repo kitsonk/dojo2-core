@@ -33,20 +33,11 @@ define([], function () {
 	}
 
 	/**
-	 * Options that may be used to remove a cookie.
-	 *
-	 * @name removeCookieOptions
-	 *
-	 * @property {string} path
-	 * The path to use for the cookie.
-	 */
-
-	/**
 	 * Options that may be used to set a cookie.
 	 *
 	 * @name cookieOptions
 	 *
-	 * @property {Date} expires
+	 * @property {(Date|string)} expires
 	 * The date at which the cookie should expire. By default, the cookie will expire when the browser closes.
 	 *
 	 * @property {number} maxAge
@@ -68,22 +59,29 @@ define([], function () {
 	 * @returns {string}
 	 */
 	function createCookieOptions(/**cookieOptions*/ options) {
-		var optionsString = '';
+		var optionsString = '',
+			value;
+
 		for (var k in options) {
+			value = options[k];
+
 			if (k === 'maxAge') {
 				k = 'max-age';
+			}
+			else if (k === 'secure' && !value) {
+				continue;
 			}
 
 			optionsString += '; ' + encodeURIComponent(k);
 
 			if (k === 'secure') {
-				// do nothing, secure is a boolean flag
+				// secure is a boolean flag, so provide no value
 			}
-			else if (k === 'expires') {
-				optionsString += '=' + encodeURIComponent(options[k].toUTCString());
+			else if (k === 'expires' && value.toUTCString) {
+				optionsString += '=' + encodeURIComponent(value.toUTCString());
 			}
 			else {
-				optionsString += '=' + encodeURIComponent(options[k]);
+				optionsString += '=' + encodeURIComponent(value);
 			}
 		}
 
@@ -129,14 +127,17 @@ define([], function () {
 		 * Sets the value of a cookie.
 		 */
 		setItem: function (/**string*/ key, /**string*/ data, /**cookieOptions=*/ options) {
+			options = options || {};
 			document.cookie = encodeURIComponent(key) + '=' + encodeURIComponent(data) + createCookieOptions(options);
 		},
 
 		/**
 		 * Removes a cookie.
 		 */
-		removeItem: function (/**string*/ key, /**removeCookieOptions=*/ options) {
-			document.cookie = encodeURIComponent(key) + '=' + '; expires=' + longAgo + createCookieOptions(options);
+		removeItem: function (/**string*/ key, /**cookieOptions=*/ options) {
+			options = options ? Object.create(options) : {};
+			options.expires = longAgo;
+			document.cookie = encodeURIComponent(key) + '=' + createCookieOptions(options);
 		}
 	};
 });
