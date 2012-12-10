@@ -4,10 +4,12 @@ The Dojo Toolkit is a non-prescriptive collection of JavaScript modules
 designed to work together to help you build well-architected, high-performance
 Web applications.
 
+
 ## This repository
 
 This repository is an experimental repository for the next major version of the
 Dojo Toolkit.
+
 
 ## Code conventions
 
@@ -161,7 +163,8 @@ Those that are not are listed here:
 1. The most appropriate data types SHOULD be used in all cases (i.e. boolean for
    booleans, not number).
 
-### Documentation
+
+## Documentation
 
 1. All public APIs MUST be commented using
    [jsdoc](https://code.google.com/p/jsdoc-toolkit/wiki/TagReference), following the
@@ -175,13 +178,14 @@ Those that are not are listed here:
    confusing that it is not clear on its own, it SHOULD be rewritten to be
    clearer.
 
-### Linting
+
+## Linting
 
 Code committed to this repository should follow the jshint rules given in the
 `.jshintrc` file. Unless otherwise noted, these options MUST NOT be overridden
 using `/*jshint*/`.
 
-#### Rationales
+### Rationales
 
 * `asi`: Relying on ASI is sloppy and leads to inadvertent code breakage in
   edge cases. Using semicolons only in these edge cases requires all authors
@@ -356,6 +360,15 @@ using `/*jshint*/`.
   limit, `/*jshint*/` may be used within the function to increase the limit as
   long as a comment justifying the increase is also provided. Refactoring code
   that violates the complexity limit is preferred.
+
+
+## Testing
+
+Test cases must be written using XXX testing tool.
+
+XXX% code coverage and XXX% branch coverage is required for all code submitted
+to this repository as reported by XXX code coverage tool.
+
 
 ## License
 
