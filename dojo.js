@@ -88,8 +88,8 @@
 		},
 
 		mix = function (dest, src) {
-			for (var p in src) {
-				dest[p] = src[p];
+			for (var k in src) {
+				dest[k] = src[k];
 			}
 			return dest;
 		},
@@ -138,8 +138,8 @@
 
 	// userConfig has tests override defaultConfig has tests; do this after the environment detection because
 	// the environment detection usually sets some has feature values in the hasCache.
-	for (var p in userConfig.has) {
-		has.add(p, userConfig.has[p], false, true);
+	for (var k in userConfig.has) {
+		has.add(k, userConfig.has[k], false, true);
 	}
 
 	//
@@ -275,30 +275,25 @@
 			// entered into pendingCacheInsert; modules are then pressed into cache upon (1) AMD define or (2) upon receiving another
 			// independent set of cached modules. (1) is the usual case, and this case allows normalizing mids given in the pending
 			// cache for the local configuration, possibly relocating modules.
-			 = {},
-
-		dojoSniffConfig
-			// map of configuration variables
-			// give the data-dojo-config as sniffed from the document (if any)
-			= {};
+			 = {};
 
 	if (has('dojo-config-api')) {
 		var consumePendingCacheInsert = function (referenceModule) {
-				var p,
+				var k,
 					item,
 					match,
 					now,
 					m;
 
-				for (p in pendingCacheInsert) {
-					item = pendingCacheInsert[p];
-					match = p.match(/^url\:(.+)/);
+				for (k in pendingCacheInsert) {
+					item = pendingCacheInsert[k];
+					match = k.match(/^url\:(.+)/);
 					if (match) {
 						cache[urlKeyPrefix + toUrl(match[1], referenceModule)] = item;
-					} else if (p === '*now') {
+					} else if (k === '*now') {
 						now = item;
-					} else if (p !== '*noref') {
-						m = getModuleInfo(p, referenceModule);
+					} else if (k !== '*noref') {
+						m = getModuleInfo(k, referenceModule);
 						cache[m.mid] = cache[urlKeyPrefix + m.url] = item;
 					}
 				}
@@ -314,12 +309,12 @@
 				// of-map-key. The regex looks for the map-key followed by either "/" or end-of-string at the beginning
 				// of a the search source. Notice the map-value is irrelevant to the algorithm
 				dest.splice(0, dest.length);
-				for (var p in map) {
+				for (var k in map) {
 					dest.push([
-						p,
-						map[p],
-						new RegExp('^' + p.replace(/[-\[\]{}()*+?.,\\\^$|#\s]/g, '\\$&') + '(?:\/|$)'),
-						p.length
+						k,
+						map[k],
+						new RegExp('^' + k.replace(/[-\[\]{}()*+?.,\\\^$|#\s]/g, '\\$&') + '(?:\/|$)'),
+						k.length
 					]);
 				}
 				dest.sort(function (lhs, rhs) { return rhs[3] - lhs[3]; });
@@ -359,20 +354,20 @@
 
 
 			config = function (config, booting, referenceModule) {
-				for (var p in config) {
-					if (p === 'waitSeconds') {
-						req.waitms = (config[p] || 0) * 1000;
+				for (var k in config) {
+					if (k === 'waitSeconds') {
+						req.waitms = (config[k] || 0) * 1000;
 					}
-					if (p === 'cacheBust') {
-						cacheBust = config[p] ? (isString(config[p]) ? config[p] : (new Date()).getTime() + '') : '';
+					if (k === 'cacheBust') {
+						cacheBust = config[k] ? (isString(config[k]) ? config[k] : (new Date()).getTime() + '') : '';
 					}
-					if (p === 'baseUrl' || p === 'combo') {
-						req[p] = config[p];
+					if (k === 'baseUrl' || k === 'combo') {
+						req[k] = config[k];
 					}
-					if (config[p] !== hasCache) {
+					if (config[k] !== hasCache) {
 						// accumulate raw config info for client apps which can use this to pass their own config
-						req.rawConfig[p] = config[p];
-						p !== 'has' && has.add('config-' + p, config[p], false, booting);
+						req.rawConfig[k] = config[k];
+						k !== 'has' && has.add('config-' + k, config[k], false, booting);
 					}
 				}
 
@@ -387,8 +382,8 @@
 
 				// now do the special work for has, packages, packagePaths, paths, aliases, and cache
 
-				for (p in config.has) {
-					has.add(p, config.has[p], false, booting);
+				for (k in config.has) {
+					has.add(k, config.has[k], false, booting);
 				}
 
 				// for each package found in any packages config item, augment the packs map owned by the loader
@@ -410,9 +405,9 @@
 					delayedModuleConfig.push({ config: config.config });
 				}
 				else {
-					for (p in config.config) {
-						var module = getModule(p, referenceModule);
-						module.config = mix(module.config || {}, config.config[p]);
+					for (k in config.config) {
+						var module = getModule(k, referenceModule);
+						module.config = mix(module.config || {}, config.config[k]);
 					}
 				}
 
@@ -432,71 +427,36 @@
 		// execute the various sniffs; userConfig can override and value
 		//
 
-		if (has('dojo-cdn') || has('dojo-sniff')) {
-			// the sniff regex looks for a src attribute ending in dojo.js, optionally preceded with a path.
-			// match[3] returns the path to dojo.js (if any) without the trailing slash. This is used for the
-			// dojo location on CDN deployments and baseUrl when either/both of these are not provided
-			// explicitly in the config data; this is the 1.6- behavior.
+		if (has('dojo-cdn') || has('dojo-sniff-baseUrl')) {
+			(function () {
+				var script = doc.currentScript || doc.scripts[doc.scripts.length - 1],
+					baseUrl = /^(.*?)\/[^\/]+(?:\?.*)?$/.exec(script.src)[1];
 
-			var scripts = doc.getElementsByTagName('script'),
-				i = 0,
-				script,
-				dojoDir,
-				src,
-				match;
-			while (i < scripts.length) {
-				script = scripts[i++];
-				if ((src = script.getAttribute('src')) && (match = src.match(/(((.*)\/)|^)dojo\.js(\W|$)/i))) {
-					// sniff dojoDir and baseUrl
-					dojoDir = match[3] || '';
-					defaultConfig.baseUrl = defaultConfig.baseUrl || dojoDir;
+				defaultConfig.baseUrl = defaultConfig.baseUrl || baseUrl;
 
-					// sniff configuration on attribute in script element
-					src = (script.getAttribute('data-dojo-config') || script.getAttribute('djConfig'));
-					if (src) {
-						dojoSniffConfig = req.eval('({ ' + src + ' })', 'data-dojo-config');
+				// sniff requirejs attribute
+				if (has('dojo-requirejs-api')) {
+					var dataMain = script.getAttribute('data-main');
+					if (dataMain) {
+						defaultConfig.deps = defaultConfig.deps || [ dataMain ];
 					}
+				}
 
-					// sniff requirejs attribute
-					if (has('dojo-requirejs-api')) {
-						var dataMain = script.getAttribute('data-main');
-						if (dataMain) {
-							dojoSniffConfig.deps = dojoSniffConfig.deps || [dataMain];
-						}
+				if (has('dojo-cdn')) {
+					packs.dojo.location = baseUrl;
+					if (baseUrl) {
+						baseUrl += '/';
 					}
-					break;
+					packs.dijit.location = baseUrl + '../dijit/';
+					packs.dojox.location = baseUrl + '../dojox/';
 				}
-			}
-		}
-
-		if (has('dojo-test-sniff')) {
-			// pass down doh.testConfig from parent as if it were a data-dojo-config
-			try {
-				if (window.parent !== window && window.parent.require) {
-					var doh = window.parent.require('doh');
-					doh && mix(dojoSniffConfig, doh.testConfig);
-				}
-			}
-			catch (e) {}
+			}());
 		}
 
 		// configure the loader; let the user override defaults
 		req.rawConfig = {};
 		config(defaultConfig, true);
-
-		// do this before setting userConfig/sniffConfig to allow userConfig/sniff overrides
-		if (has('dojo-cdn')) {
-			packs.dojo.location = dojoDir;
-			if (dojoDir) {
-				dojoDir += '/';
-			}
-			packs.dijit.location = dojoDir + '../dijit/';
-			packs.dojox.location = dojoDir + '../dojox/';
-		}
-
 		config(userConfig, true);
-		config(dojoSniffConfig, true);
-
 	}
 	else {
 		// no config API, assume defaultConfig has everything the loader needs...for the entire lifetime of the application
@@ -729,7 +689,7 @@
 					mid = mapItem[1] + mid.substring(mapItem[3]);
 				}
 
-				match = mid.match(/^([^\/]+)(\/(.+))?$/);
+				var match = mid.match(/^([^\/]+)(\/(.+))?$/);
 				pid = match ? match[1] : '';
 				if ((pack = packs[pid])) {
 					mid = pid + '/' + (midInPackage = (match[3] || pack.main));
@@ -908,8 +868,8 @@
 					}
 				}
 			};
-			for (var p in modules) {
-				substituteModules(modules[p]);
+			for (var k in modules) {
+				substituteModules(modules[k]);
 			}
 			forEach(execQ, substituteModules);
 		},
@@ -924,7 +884,7 @@
 				resolvePluginLoadQ(module);
 			}
 			// remove all occurrences of this module from the execQ
-			for (i = 0; i < execQ.length;) {
+			for (var i = 0; i < execQ.length;) {
 				if (execQ[i] === module) {
 					execQ.splice(i, 1);
 				}
@@ -1267,21 +1227,10 @@
 			});
 
 		if (has('dojo-inject-api')) {
-			// if the loader is on the page, there must be at least one script element
-			// getting its parent and then doing insertBefore solves the "Operation Aborted"
-			// error in IE from appending to a node that isn't properly closed; see
-			// dojo/tests/_base/loader/requirejs/simple-badbase.html for an example
-			var sibling = doc.getElementsByTagName('script')[0],
-				insertPoint = sibling.parentNode;
 			req.injectUrl = function (url, callback, owner) {
-				// insert a script element to the insert-point element with src=url;
-				// apply callback upon detecting the script has loaded.
-
 				var node = owner.node = doc.createElement('script'),
-					onLoad = function (e) {
-						e = e || window.event;
-						var node = e.target || e.srcElement;
-						if (e.type === 'load' || /complete|loaded/.test(node.readyState)) {
+					onLoad = function (event) {
+						if (event.type === 'load') {
 							loadDisconnector();
 							errorDisconnector();
 							callback && callback();
@@ -1296,7 +1245,7 @@
 
 				node.charset = 'utf-8';
 				node.src = url;
-				insertPoint.insertBefore(node, sibling);
+				document.head.appendChild(node);
 				return node;
 			};
 		}
@@ -1354,7 +1303,7 @@
 				}
 			}
 		});
-		trace.set(mix(mix(mix({}, defaultConfig.trace), userConfig.trace), dojoSniffConfig.trace));
+		trace.set(mix(mix({}, defaultConfig.trace), userConfig.trace));
 		on('config', function (config) {
 			config.trace && trace.set(config.trace);
 		});
@@ -1431,8 +1380,8 @@
 		try {
 			console.error(arg);
 			if (arg instanceof Error) {
-				for (var p in arg) {
-					console.log(p + ':', arg[p]);
+				for (var k in arg) {
+					console.log(k + ':', arg[k]);
 				}
 				console.log('.');
 			}
@@ -1487,8 +1436,8 @@
 
 	if (has('dojo-config-api')) {
 		forEach(delayedModuleConfig, function (c) { config(c); });
-		var bootDeps = dojoSniffConfig.deps || userConfig.deps || defaultConfig.deps,
-			bootCallback = dojoSniffConfig.callback || userConfig.callback || defaultConfig.callback;
+		var bootDeps = userConfig.deps || defaultConfig.deps,
+			bootCallback = userConfig.callback || defaultConfig.callback;
 		req.boot = (bootDeps || bootCallback) ? [bootDeps || [], bootCallback] : null;
 	}
 	if (!has('dojo-built')) {
@@ -1500,12 +1449,14 @@
 	// userConfig
 	(function () {
 		// make sure we're looking at global dojoConfig etc.
-		return this.dojoConfig || this.djConfig || this.require || {};
+		return this.dojoConfig || this.require || {};
 	})(),
 
 	// defaultConfig
 	{
 		// the default configuration for a browser; this will be modified by other environments
+		// use hasCache instead of has for the sake of efficiency; the two are equivalent,
+		// but using hasCache bypasses a loop + n calls to has.add
 		hasCache: {
 			'host-browser': true,
 			'dom': true,
@@ -1519,8 +1470,7 @@
 			'dojo-dom-ready-api': true,
 			'dojo-publish-privates': true,
 			'dojo-config-api': true,
-			'dojo-sniff': true,
-			'dojo-test-sniff': true,
+			'dojo-sniff-baseUrl': true,
 			'config-deferredInstrumentation': true,
 			'config-useDeferredInstrumentation': 'report-unhandled-rejections'
 		},
