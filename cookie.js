@@ -102,7 +102,7 @@ define([], function () {
 		 * The number of cookies that are currently set.
 		 */
 		get length() {
-			return count(document.cookie, '; ');
+			return document.cookie.length ? count(document.cookie, '; ') + 1 : 0;
 		},
 
 		/**
