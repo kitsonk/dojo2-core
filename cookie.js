@@ -111,7 +111,7 @@ define([], function () {
 		 */
 		key: function (/**number*/ index) {
 			var keyValuePair = document.cookie.split('; ')[index];
-			return keyValuePair ? /^([^=]+)/.exec(keyValuePair)[0] : null;
+			return keyValuePair ? decodeURIComponent(/^([^=]+)/.exec(keyValuePair)[0]) : null;
 		},
 
 		/**
