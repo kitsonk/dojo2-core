@@ -365,10 +365,14 @@ using `/*jshint*/`.
 
 ## Testing
 
-Test cases must be written using XXX testing tool.
+Test cases are written using Mocha with XXX assertion library (must be
+assert-style library).
 
-XXX% code coverage and XXX% branch coverage is required for all code submitted
-to this repository as reported by XXX code coverage tool.
+XXX% line coverage and XXX% branch coverage is required for all code submitted
+to this repository, as reported by istanbul.
+
+Functional testing of UI components must use XXX (?:webdriver-js|wd) (probably
+wd).
 
 
 ## License
