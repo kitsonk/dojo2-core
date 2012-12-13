@@ -92,7 +92,7 @@
 		//
 		// 2. Injected: a script element has been appended to the insert-point element demanding the resource implied by the URL
 		//
-		// 3. Loaded: the resource injected in [2] has been evalated.
+		// 3. Loaded: the resource injected in [2] has been evaluated.
 		//
 		// 4. Defined: the resource contained a define statement that advised the loader about the module.
 		//
