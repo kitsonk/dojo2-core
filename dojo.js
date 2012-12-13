@@ -363,7 +363,9 @@
 			}
 
 			if (!module.executed) {
-				if (!module.def) {
+				// TODO: This seems like an incorrect condition inference. Originally it was simply !module.def
+				// which caused modules with falsy defined values to never execute.
+				if (!module.def && !module.deps) {
 					return abortExec;
 				}
 
