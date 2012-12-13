@@ -645,6 +645,14 @@
 		throw new Error('Unsupported platform');
 	}
 
+	has.add('debug-loader-internals', true);
+	if (has('debug-loader-internals')) {
+		req.inspect = function (name) {
+			/*jshint evil: true */
+			return eval(name);
+		};
+	}
+
 	mix(req, {
 		signal: function () {},
 		toAbsMid: toAbsMid,
