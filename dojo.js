@@ -344,8 +344,8 @@
 		abortExec = {},
 		executedSomething = false;
 
-	has.add('trace-circular-dependencies', true);
-	if (has('trace-circular-dependencies')) {
+	has.add('debug-circular-dependencies', true);
+	if (has('debug-circular-dependencies')) {
 		var circularTrace = [];
 	}
 
@@ -358,7 +358,7 @@
 				// add properties to it. When the module finally runs its factory, the factory can
 				// read/write/replace this object. Notice that so long as the object isn't replaced, any
 				// reference taken earlier while walking the deps list is still valid.
-				has('trace-circular-dependencies') && console.warn('Circular dependency: ' + circularTrace.concat(module.mid).join(' -> '));
+				has('debug-circular-dependencies') && console.warn('Circular dependency: ' + circularTrace.concat(module.mid).join(' -> '));
 				return module.cjs.exports;
 			}
 
@@ -372,7 +372,7 @@
 					result,
 					args;
 
-				has('trace-circular-dependencies') && circularTrace.push(module.mid);
+				has('debug-circular-dependencies') && circularTrace.push(module.mid);
 
 				module.executed = EXECUTING;
 				args = deps.map(function (dep) {
@@ -387,7 +387,7 @@
 
 				if (result === abortExec) {
 					module.executed = false;
-					has('trace-circular-dependencies') && circularTrace.pop();
+					has('debug-circular-dependencies') && circularTrace.pop();
 					return abortExec;
 				}
 
@@ -435,7 +435,7 @@
 					delete module.loadQ;
 				}
 
-				has('trace-circular-dependencies') && circularTrace.pop();
+				has('debug-circular-dependencies') && circularTrace.pop();
 			}
 
 			// at this point the module is guaranteed fully executed
