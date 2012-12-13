@@ -544,7 +544,7 @@
 						signal('cachedThrew', [ error, module ]);
 					}
 				}
-				injectUrl(module.url, onLoadCallback, module);
+				injectUrl(module.url, onLoadCallback);
 			}
 		},
 
@@ -591,36 +591,27 @@
 	var setGlobals,
 		injectUrl;
 	if (has('host-browser')) {
-		var domOn = function (node, eventName, handler) {
-			// Add an event listener to a DOM node using the API appropriate for the current browser;
-			// return a function that will disconnect the listener.
-			node.addEventListener(eventName, handler, false);
-			return function () {
-				node.removeEventListener(eventName, handler, false);
-			};
-		};
-
-		injectUrl = function (url, callback, module) {
+		injectUrl = function (url, callback) {
 			// insert a script element to the insert-point element with src=url;
 			// apply callback upon detecting the script has loaded.
-			var node = module.node = document.createElement('script'),
+			var node = document.createElement('script'),
 				handler = function (event) {
-					loadDisconnector();
-					errorDisconnector();
+					document.head.removeChild(node);
+
 					if (event.type === 'load') {
 						callback();
 					}
 					else {
 						throw new Error('Failed to load module ' + module.mid + ' from ' + url);
 					}
-				},
-				loadDisconnector = domOn(node, 'load', handler),
-				errorDisconnector = domOn(node, 'error', handler);
+				};
+
+			node.addEventListener('load', handler, false);
+			node.addEventListener('error', handler, false);
 
 			node.charset = 'utf-8';
 			node.src = url;
 			document.head.appendChild(node);
-			return node;
 		};
 
 		setGlobals = function (require, define) {
