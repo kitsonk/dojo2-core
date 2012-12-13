@@ -441,9 +441,9 @@
 		checkCompleteGuard = 0,
 
 		guardCheckComplete = function (proc) {
-			checkCompleteGuard++;
+			++checkCompleteGuard;
 			proc();
-			checkCompleteGuard--;
+			--checkCompleteGuard;
 			!defArgs && !waitingCount && !execQ.length && !checkCompleteGuard && signal('idle', []);
 		},
 
