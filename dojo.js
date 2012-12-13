@@ -146,17 +146,13 @@
 
 		uidGenerator = 0,
 
-		ModuleError = function (module) {
-			return mix(new Error('Module failed to execute'), module);
-		},
-
 		contextRequire = function (a1, a2, referenceModule) {
 			var module;
 			if (typeof a1 === 'string') {
 				// a1 is a string; therefore, signature is (moduleId)
 				module = getModule(a1, referenceModule);
 				if (module.executed !== true) {
-					throw new ModuleError(module);
+					throw new Error('Attempt to require unloaded module ' + module.mid);
 				}
 			}
 			else {
@@ -346,9 +342,14 @@
 
 		EXECUTING = 'executing',
 		abortExec = {},
-		executedSomething,
+		executedSomething = false;
 
-		execModule = function (module) {
+	has.add('trace-circular-dependencies', true);
+	if (has('trace-circular-dependencies')) {
+		var circularTrace = [];
+	}
+
+	var execModule = function (module) {
 			// run the dependency array, then run the factory for module
 			if (module.executed === EXECUTING) {
 				// for circular dependencies, assume the first module encountered was executed OK
@@ -357,6 +358,7 @@
 				// add properties to it. When the module finally runs its factory, the factory can
 				// read/write/replace this object. Notice that so long as the object isn't replaced, any
 				// reference taken earlier while walking the deps list is still valid.
+				has('trace-circular-dependencies') && console.warn('Circular dependency: ' + circularTrace.concat(module.mid).join(' -> '));
 				return module.cjs.exports;
 			}
 
@@ -369,6 +371,8 @@
 					factory = module.def,
 					result,
 					args;
+
+				has('trace-circular-dependencies') && circularTrace.push(module.mid);
 
 				module.executed = EXECUTING;
 				args = deps.map(function (dep) {
@@ -383,51 +387,57 @@
 
 				if (result === abortExec) {
 					module.executed = false;
+					has('trace-circular-dependencies') && circularTrace.pop();
 					return abortExec;
 				}
 
 				try {
 					result = typeof factory === 'function' ? factory.apply(null, args) : factory;
 				}
-				catch (e) {
-					signal('factoryThrew', [ result = e, module ]);
+				catch (error) {
+					result = error;
+					throw error;
+				}
+				finally {
+					module.result = result === undefined && module.cjs ? module.cjs.exports : result;
+					module.executed = true;
+					executedSomething = true;
+
+					// delete references to synthetic modules
+					if (module.gc) {
+						delete modules[module.mid];
+					}
+
+					// if result defines load, just assume it's a plugin; harmless if the assumption is wrong
+					result && result.load && [ 'dynamic', 'normalize', 'load' ].forEach(function (k) {
+						module[k] = result[k];
+					});
+
+					// for plugins, resolve the loadQ
+					forEach(module.loadQ, function (pseudoPluginResource) {
+						// manufacture and insert the real module in modules
+						var prid = resolvePluginResourceId(module, pseudoPluginResource.prid, pseudoPluginResource.req),
+							mid = module.dynamic ? pseudoPluginResource.mid.replace(/\*$/, prid) : (module.mid + '!' + prid),
+							pluginResource = mix(mix({}, pseudoPluginResource), { mid: mid, prid: prid });
+
+						if (!modules[mid]) {
+							// create a new (the real) plugin resource and inject it normally now that the plugin is on board
+							injectPlugin(modules[mid] = pluginResource);
+						} // else this was a duplicate request for the same (plugin, rid) for a nondynamic plugin
+
+						// pluginResource is really just a placeholder with the wrong mid (because we couldn't calculate it until the plugin was on board)
+						// fix() replaces the pseudo module in a resolved deps array with the real module
+						// lastly, mark the pseuod module as arrived and delete it from modules
+						pseudoPluginResource.fix(modules[mid]);
+						--waitingCount;
+						delete modules[pseudoPluginResource.mid];
+					});
+					delete module.loadQ;
 				}
 
-				module.result = result === undefined && module.cjs ? module.cjs.exports : result;
-				module.executed = true;
-				executedSomething = true;
-
-				// delete references to synthetic modules
-				if (module.gc) {
-					delete modules[module.mid];
-				}
-
-				// if result defines load, just assume it's a plugin; harmless if the assumption is wrong
-				result && result.load && [ 'dynamic', 'normalize', 'load' ].forEach(function (k) {
-					module[k] = result[k];
-				});
-
-				// for plugins, resolve the loadQ
-				forEach(module.loadQ, function (pseudoPluginResource) {
-					// manufacture and insert the real module in modules
-					var prid = resolvePluginResourceId(module, pseudoPluginResource.prid, pseudoPluginResource.req),
-						mid = module.dynamic ? pseudoPluginResource.mid.replace(/\*$/, prid) : (module.mid + '!' + prid),
-						pluginResource = mix(mix({}, pseudoPluginResource), { mid: mid, prid: prid });
-
-					if (!modules[mid]) {
-						// create a new (the real) plugin resource and inject it normally now that the plugin is on board
-						injectPlugin(modules[mid] = pluginResource);
-					} // else this was a duplicate request for the same (plugin, rid) for a nondynamic plugin
-
-					// pluginResource is really just a placeholder with the wrong mid (because we couldn't calculate it until the plugin was on board)
-					// fix() replaces the pseudo module in a resolved deps array with the real module
-					// lastly, mark the pseuod module as arrived and delete it from modules
-					pseudoPluginResource.fix(modules[mid]);
-					--waitingCount;
-					delete modules[pseudoPluginResource.mid];
-				});
-				delete module.loadQ;
+				has('trace-circular-dependencies') && circularTrace.pop();
 			}
+
 			// at this point the module is guaranteed fully executed
 			return module.result;
 		},
@@ -472,7 +482,7 @@
 			var plugin = module.plugin,
 				onLoad = function (def) {
 					module.result = def;
-					waitingCount--;
+					--waitingCount;
 					module.executed = true;
 					checkComplete();
 				};
@@ -514,7 +524,7 @@
 						checkComplete();
 					};
 
-				waitingCount++;
+				++waitingCount;
 				module.injected = true;
 				if ((cached = cache[module.mid])) {
 					try {
@@ -522,8 +532,9 @@
 						onLoadCallback();
 						return;
 					}
-					catch (e) {
-						signal('cachedThrew', [ e, module ]);
+					catch (error) {
+						// If a cache load fails, notify and then retrieve using injectUrl
+						signal('cachedThrew', [ error, module ]);
 					}
 				}
 				injectUrl(module.url, onLoadCallback, module);
@@ -535,14 +546,16 @@
 			return deps.map(function (dep, i) {
 				var result = getModule(dep, referenceModule);
 				if (result.fix) {
-					result.fix = function (m) { module.deps[i] = m; };
+					result.fix = function (m) {
+						module.deps[i] = m;
+					};
 				}
 				return result;
 			});
 		},
 
 		defineModule = function (module, deps, def) {
-			waitingCount--;
+			--waitingCount;
 			return mix(module, {
 				def: def,
 				deps: resolveDeps(deps, module, module),
@@ -584,10 +597,15 @@
 			// insert a script element to the insert-point element with src=url;
 			// apply callback upon detecting the script has loaded.
 			var node = module.node = document.createElement('script'),
-				handler = function (e) {
+				handler = function (event) {
 					loadDisconnector();
 					errorDisconnector();
-					e.type === 'load' ? callback() : signal('injectFailed', [ e, module ]);
+					if (event.type === 'load') {
+						callback();
+					}
+					else {
+						throw new Error('Failed to load module ' + module.mid + ' from ' + url);
+					}
 				},
 				loadDisconnector = domOn(node, 'load', handler),
 				errorDisconnector = domOn(node, 'error', handler);
