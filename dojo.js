@@ -50,7 +50,7 @@
 	// loader state data
 	//
 
-		// AMD baseUrl config
+	// AMD baseUrl config
 	var baseUrl = './',
 
 		// AMD paths config
