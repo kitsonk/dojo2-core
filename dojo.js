@@ -393,49 +393,43 @@
 					return abortExec;
 				}
 
-				try {
-					result = typeof factory === 'function' ? factory.apply(null, args) : factory;
+				result = typeof factory === 'function' ? factory.apply(null, args) : factory;
+
+				// TODO: But of course, module.cjs always exists.
+				module.result = result === undefined && module.cjs ? module.cjs.exports : result;
+				module.executed = true;
+				executedSomething = true;
+
+				// delete references to synthetic modules
+				if (module.gc) {
+					delete modules[module.mid];
 				}
-				catch (error) {
-					result = error;
-					throw error;
-				}
-				finally {
-					module.result = result === undefined && module.cjs ? module.cjs.exports : result;
-					module.executed = true;
-					executedSomething = true;
 
-					// delete references to synthetic modules
-					if (module.gc) {
-						delete modules[module.mid];
-					}
+				// if result defines load, just assume it's a plugin; harmless if the assumption is wrong
+				result && result.load && [ 'dynamic', 'normalize', 'load' ].forEach(function (k) {
+					module[k] = result[k];
+				});
 
-					// if result defines load, just assume it's a plugin; harmless if the assumption is wrong
-					result && result.load && [ 'dynamic', 'normalize', 'load' ].forEach(function (k) {
-						module[k] = result[k];
-					});
+				// for plugins, resolve the loadQ
+				forEach(module.loadQ, function (pseudoPluginResource) {
+					// manufacture and insert the real module in modules
+					var prid = resolvePluginResourceId(module, pseudoPluginResource.prid, pseudoPluginResource.req),
+						mid = module.dynamic ? pseudoPluginResource.mid.replace(/\*$/, prid) : (module.mid + '!' + prid),
+						pluginResource = mix(mix({}, pseudoPluginResource), { mid: mid, prid: prid });
 
-					// for plugins, resolve the loadQ
-					forEach(module.loadQ, function (pseudoPluginResource) {
-						// manufacture and insert the real module in modules
-						var prid = resolvePluginResourceId(module, pseudoPluginResource.prid, pseudoPluginResource.req),
-							mid = module.dynamic ? pseudoPluginResource.mid.replace(/\*$/, prid) : (module.mid + '!' + prid),
-							pluginResource = mix(mix({}, pseudoPluginResource), { mid: mid, prid: prid });
+					if (!modules[mid]) {
+						// create a new (the real) plugin resource and inject it normally now that the plugin is on board
+						injectPlugin(modules[mid] = pluginResource);
+					} // else this was a duplicate request for the same (plugin, rid) for a nondynamic plugin
 
-						if (!modules[mid]) {
-							// create a new (the real) plugin resource and inject it normally now that the plugin is on board
-							injectPlugin(modules[mid] = pluginResource);
-						} // else this was a duplicate request for the same (plugin, rid) for a nondynamic plugin
-
-						// pluginResource is really just a placeholder with the wrong mid (because we couldn't calculate it until the plugin was on board)
-						// fix() replaces the pseudo module in a resolved deps array with the real module
-						// lastly, mark the pseuod module as arrived and delete it from modules
-						pseudoPluginResource.fix(modules[mid]);
-						--waitingCount;
-						delete modules[pseudoPluginResource.mid];
-					});
-					delete module.loadQ;
-				}
+					// pluginResource is really just a placeholder with the wrong mid (because we couldn't calculate it until the plugin was on board)
+					// fix() replaces the pseudo module in a resolved deps array with the real module
+					// lastly, mark the pseuod module as arrived and delete it from modules
+					pseudoPluginResource.fix(modules[mid]);
+					--waitingCount;
+					delete modules[pseudoPluginResource.mid];
+				});
+				delete module.loadQ;
 
 				has('debug-circular-dependencies') && circularTrace.pop();
 			}
