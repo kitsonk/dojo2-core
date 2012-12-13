@@ -78,7 +78,7 @@
 		// mid: the fully-resolved (i.e., mappings have been applied) module identifier without the package identifier (e.g., "dojo/io/script")
 		// url: the URL from which the module was retrieved
 		// pack: the package object of the package to which the module belongs
-		// executed: false => not executed; executing => in the process of tranversing deps and running factory; true => factory has been executed
+		// executed: false => not executed; EXECUTING => in the process of tranversing deps and running factory; true => factory has been executed
 		// deps: the dependency array for this module (array of modules objects)
 		// def: the factory for this module
 		// result: the result of the running the factory for this module
@@ -344,13 +344,13 @@
 		cjsExportsModule = makeCjs('exports'),
 		cjsModuleModule = makeCjs('module'),
 
-		executing = {},
+		EXECUTING = 'executing',
 		abortExec = {},
 		executedSomething,
 
 		execModule = function (module) {
 			// run the dependency array, then run the factory for module
-			if (module.executed === executing) {
+			if (module.executed === EXECUTING) {
 				// for circular dependencies, assume the first module encountered was executed OK
 				// modules that circularly depend on a module that has not run its factory will get
 				// the premade cjs.exports===module.result. They can take a reference to this object and/or
@@ -370,7 +370,7 @@
 					result,
 					args;
 
-				module.executed = executing;
+				module.executed = EXECUTING;
 				args = deps.map(function (dep) {
 					if (result !== abortExec) {
 						result = ((dep === cjsRequireModule) ? createRequire(module) :
