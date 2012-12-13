@@ -41,7 +41,7 @@
 		};
 
 		return has;
-	}());
+	})();
 
 	has.add('host-browser', typeof document !== 'undefined' && typeof location !== 'undefined');
 	has.add('host-node', typeof process === 'object' && process.versions && process.versions.node);
@@ -721,4 +721,4 @@
 	});
 
 	setGlobals(req, define);
-})(this);
+})();
