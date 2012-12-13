@@ -627,14 +627,15 @@
 
 		// retain the ability to get node's require
 		req.nodeRequire = require;
-		injectUrl = function (url, callback, module) {
-			try {
-				vm.runInThisContext(fs.readFileSync(url, 'utf8'), url);
+		injectUrl = function (url, callback) {
+			fs.readFile(url, 'utf8', function (error, data) {
+				if (error) {
+					throw error;
+				}
+
+				vm.runInThisContext(data, url);
 				callback();
-			}
-			catch (e) {
-				signal('injectFailed', [e, module]);
-			}
+			});
 		};
 
 		setGlobals = function (require, define) {
