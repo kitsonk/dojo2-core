@@ -639,7 +639,7 @@
 		};
 
 		setGlobals = function (require, define) {
-			module.exports = require;
+			module.exports = this.require = require;
 			this.define = define;
 		};
 	}
