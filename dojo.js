@@ -127,8 +127,8 @@
 			return dest;
 		},
 
-		signal = function (type, args) {
-			req.signal(type, args);
+		signal = function () {
+			req.signal.apply(req, arguments);
 		},
 
 		consumePendingCacheInsert = function (referenceModule) {
