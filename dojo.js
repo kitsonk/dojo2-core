@@ -574,14 +574,6 @@
 			});
 		};
 
-	// For browser builds, the loaderEnvironmentSniff exclude section below can be replaced with
-	//
-	//	var doc = document, isBrowser = 1, isNode = 0;
-	//
-	// with a replacement property in the build profile. This will result in the minifier trimming the
-	// node sections. Such ultra-minification is likely only important in mobile devices, and almost
-	// never important for in node environments
-
 	var setGlobals,
 		injectUrl;
 	if (has('host-browser')) {
