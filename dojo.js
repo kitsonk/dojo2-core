@@ -265,7 +265,7 @@
 					pid: pid,
 					mid: mid,
 					pack: pack,
-					url: compactPath((/(?:^\/)|(?:\:)/.test(url) ? '' : baseUrl) + url + '.js')
+					url: compactPath((/(?:^\/)|(?:\:)/.test(url) ? '' : baseUrl) + url + (/\.js(?:\?[^?]*)?$/.test(url) ? '' : '.js'))
 				};
 			}
 
@@ -513,6 +513,11 @@
 					onLoadCallback = function () {
 						// defArgs is an array of [dependencies, factory]
 						consumePendingCacheInsert(module);
+
+						// non-amd module
+						if (!defArgs) {
+							defArgs = [ [], undefined ];
+						}
 
 						defineModule(module, defArgs[0], defArgs[1]);
 						defArgs = null;
