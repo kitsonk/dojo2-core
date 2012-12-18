@@ -69,13 +69,16 @@ The following naming conventions MUST be used:
     <td>String iterator (for-in)</td><td>k, key</td>
   </tr>
   <tr>
-	<td>Event</td><td>event</td>
+    <td>Event</td><td>event</td>
   </tr>
   <tr>
     <td>Remover handle</td><td>handle</td>
   </tr>
   <tr>
     <td>Error object</td><td>error</td>
+  </tr>
+  <tr>
+    <td>Keyword arguments object</td><td>kwArgs</td>
   </tr>
   <tr>
     <td>All others</td><td>Do not abbreviate</td>
@@ -178,6 +181,10 @@ Those that are not are listed here:
    why it was written the way it was), not *what* the code does. If code is so
    confusing that it is not clear on its own, it SHOULD be rewritten to be
    clearer.
+1. Shorthand reference to a property of a module MUST use dot notation.
+   e.g. `foo/module/id.fooFunction`.
+2. Shorthand reference to a property of a prototype MUST use hash notation.
+   e.g. `foo/module/Constructor#fooFunction`.
 
 
 ## Linting
