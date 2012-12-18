@@ -1,7 +1,7 @@
 define([
 	"./tracer",
 	"../has",
-	"../_base/lang",
+	"../lang",
 	"../_base/array"
 ], function(tracer, has, lang, arrayUtil){
 	function logError(error, rejection, deferred){

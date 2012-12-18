@@ -1,5 +1,5 @@
 define([
-	"../_base/lang"
+	"../lang"
 ], function(lang){
 	"use strict";
 
@@ -10,13 +10,15 @@ define([
 		throw new TypeError("abstract");
 	}
 
-	return lang.extend(function Promise(){
+	function Promise(){
 		// summary:
 		//		The public interface to a deferred.
 		// description:
 		//		The public interface to a deferred. All promises in Dojo are
 		//		instances of this class.
-	}, {
+	}
+
+	lang.mixin(Promise.prototype, {
 		then: function(callback, errback, progback){
 			// summary:
 			//		Add new callbacks to the promise.
@@ -130,4 +132,6 @@ define([
 			return "[object Promise]";
 		}
 	});
+
+	return Promise;
 });

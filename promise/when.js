@@ -1,6 +1,6 @@
 define([
-	"./Deferred",
-	"./promise/Promise"
+	"../Deferred",
+	"./Promise"
 ], function(Deferred, Promise){
 	"use strict";
 

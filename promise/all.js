@@ -1,7 +1,7 @@
 define([
 	"../_base/array",
 	"../Deferred",
-	"../when"
+	"./when"
 ], function(array, Deferred, when){
 	"use strict";
 

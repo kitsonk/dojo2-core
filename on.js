@@ -1,4 +1,4 @@
-define(["./has!dom-addeventlistener?:./aspect", "./_base/kernel", "./sniff"], function(aspect, dojo, has){
+define(["require", "./has!dom-addeventlistener?:./aspect", "./has"], function(require, aspect, has){
 
 	"use strict";
 	if(has("dom")){ // check to make sure we are in a browser, this module should work anywhere
@@ -176,8 +176,13 @@ define(["./has!dom-addeventlistener?:./aspect", "./_base/kernel", "./sniff"], fu
 			var matchesTarget = typeof selector == "function" ? {matches: selector} : this,
 				bubble = eventType.bubble;
 			function select(eventTarget){
+				try {
+					var query = require("./query");
+				}
+				catch (error) {}
+
 				// see if we have a valid matchesTarget or default to dojo.query
-				matchesTarget = matchesTarget && matchesTarget.matches ? matchesTarget : dojo.query;
+				matchesTarget = matchesTarget && matchesTarget.matches ? matchesTarget : query;
 				// there is a selector, so make sure it matches
 				while(!matchesTarget.matches(eventTarget, selector, target)){
 					if(eventTarget == target || children === false || !(eventTarget = eventTarget.parentNode) || eventTarget.nodeType != 1){ // intentional assignment

@@ -1,5 +1,5 @@
 define([
-	"../_base/lang",
+	"../lang",
 	"./Promise",
 	"../Evented"
 ], function(lang, Promise, Evented){

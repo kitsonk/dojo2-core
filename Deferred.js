@@ -1,6 +1,6 @@
 define([
 	"./has",
-	"./_base/lang",
+	"./lang",
 	"./errors/CancelError",
 	"./promise/Promise",
 	"./has!config-deferredInstrumentation?./promise/instrumentation"
