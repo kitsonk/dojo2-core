@@ -657,6 +657,10 @@
 			map = _map || map;
 
 			forEach(packages, function (p) {
+				if (typeof p === 'string') {
+					p = { name: p, location: p };
+				}
+
 				packs[p.name] = p;
 			});
 
