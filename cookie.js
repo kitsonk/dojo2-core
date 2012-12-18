@@ -77,8 +77,9 @@ define([], function () {
 			if (k === 'secure') {
 				// secure is a boolean flag, so provide no value
 			}
-			else if (k === 'expires' && value.toUTCString) {
-				optionsString += '=' + encodeURIComponent(value.toUTCString());
+			else if (k === 'expires') {
+				// Expires will not work if its value is URI-encoded
+				optionsString += '=' + (value.toUTCString ? value.toUTCString() : value);
 			}
 			else {
 				optionsString += '=' + encodeURIComponent(value);
@@ -119,7 +120,7 @@ define([], function () {
 		 * @returns {?string}
 		 */
 		getItem: function (/**string*/ key) {
-			var match = new RegExp('(?:^|; )' + escapeString(key) + '=([^;]*)').exec(document.cookie);
+			var match = new RegExp('(?:^|; )' + escapeString(encodeURIComponent(key)) + '=([^;]*)').exec(document.cookie);
 			return match ? decodeURIComponent(match[1]) : null;
 		},
 
