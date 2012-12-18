@@ -252,7 +252,7 @@
 			match = mid.match(/^([^\/]+)(\/(.+))?$/);
 			pid = match ? match[1] : '';
 			if ((pack = packs[pid])) {
-				mid = pid + '/' + (midInPackage = (match[3] || pack.main));
+				mid = pid + '/' + (midInPackage = (match[3] || pack.main || 'main'));
 			}
 			else {
 				pid = '';
