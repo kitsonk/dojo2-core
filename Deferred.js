@@ -103,7 +103,7 @@ define([
 		//		`dojo/errors/CancelError` instance.
 
 		// promise: dojo/promise/Promise
-		//		The public promise object that clients can add callbacks to. 
+		//		The public promise object that clients can add callbacks to.
 		var promise = this.promise = new Promise();
 
 		var deferred = this;
