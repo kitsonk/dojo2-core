@@ -165,7 +165,7 @@
 					gc: true // garbage collect
 				});
 				guardCheckComplete(function () {
-					forEach(module.deps, injectModule);
+					forEach(module.deps, injectModule.bind(null, module));
 				});
 				execQ.push(module);
 				checkComplete();
@@ -496,11 +496,17 @@
 				// several other modules and therefore can potentially unblock many modules
 				plugin.loadQ = [module];
 				execQ.unshift(plugin);
-				injectModule(plugin);
+				injectModule(module, plugin);
 			}
 		},
 
-		injectModule = function (module) {
+		injectModule = function (parent, module) {
+			// TODO: This is for debugging, we should bracket it
+			if (!module) {
+				module = parent;
+				parent = null;
+			}
+
 			if (module.plugin) {
 				injectPlugin(module);
 			}
@@ -520,7 +526,7 @@
 
 						// checkComplete!==false holds the idle signal; we're not idle if we're injecting dependencies
 						guardCheckComplete(function () {
-							forEach(module.deps, injectModule);
+							forEach(module.deps, injectModule.bind(null, module));
 						});
 						checkComplete();
 					};
@@ -538,7 +544,7 @@
 						signal('cachedThrew', [ error, module ]);
 					}
 				}
-				injectUrl(module.url, onLoadCallback);
+				injectUrl(module.url, onLoadCallback, module, parent);
 			}
 		},
 
@@ -577,7 +583,7 @@
 	var setGlobals,
 		injectUrl;
 	if (has('host-browser')) {
-		injectUrl = function (url, callback) {
+		injectUrl = function (url, callback, module, parent) {
 			// insert a script element to the insert-point element with src=url;
 			// apply callback upon detecting the script has loaded.
 			var node = document.createElement('script'),
@@ -588,7 +594,7 @@
 						callback();
 					}
 					else {
-						throw new Error('Failed to load module ' + module.mid + ' from ' + url);
+						throw new Error('Failed to load module ' + module.mid + ' from ' + url + (parent ? ' (parent: ' + parent.mid + ')' : ''));
 					}
 				};
 
