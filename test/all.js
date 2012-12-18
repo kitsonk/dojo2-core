@@ -1,4 +1,5 @@
 define([
-	'./cookie',
-	'./dom-form'
+	'./aspect',
+	'dojo/has!host-browser?./cookie',
+	'dojo/has!host-browser?./dom-form'
 ], function () {});

@@ -1,5 +1,5 @@
 define([
-	'teststack/main!tdd',
+	'teststack!tdd',
 	'teststack/lib/assert',
 	'dojo/Deferred',
 	'dojo/has',
@@ -10,17 +10,13 @@ define([
 		bKey = 'b=; ',
 		bValue = 'b1=; ';
 
-	if (!has('host-browser')) {
-		test.skip('Not supported on this platform');
-		return;
-	}
-
-	if (!navigator.cookieEnabled) {
-		test.skip('Cookies not enabled in the current environment');
-		return;
-	}
-
 	test.suite('cookie', function () {
+		test.setup(function () {
+			if (!navigator.cookieEnabled) {
+				throw new Error('Cookies not enabled in the current environment');
+			}
+		});
+
 		test.beforeEach(function eraseAllCookies() {
 			var aWhileAgo = new Date(1970, 0, 1).toUTCString(),
 				cookies = document.cookie.split('; ');
