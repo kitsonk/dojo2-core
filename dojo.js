@@ -14,10 +14,19 @@
 
 	/**
 	 * The global require function.
+	 * @param config //(object, optional) configuration options
 	 * @param dependencies //(array of commonjs.moduleId, optional) list of modules to be loaded before applying callback
 	 * @param callback //(function, optional) lamda expression to apply to module values implied by dependencies
 	 */
-	var req = function (dependencies, callback) {
+	var req = function (config, dependencies, callback) {
+		if (/* require([], cb) */ Array.isArray(config) || /* require(mid) */ typeof config === 'string') {
+			callback = dependencies;
+			dependencies = config;
+			config = {};
+		}
+		if (has('loader-configurable')) {
+			configure(config);
+		}
 		return contextRequire(dependencies, callback);
 	};
 
@@ -46,18 +55,73 @@
 	has.add('host-browser', typeof document !== 'undefined' && typeof location !== 'undefined');
 	has.add('host-node', typeof process === 'object' && process.versions && process.versions.node);
 
+	has.add('loader-configurable', true);
+	if (has('loader-configurable')) {
+		/**
+		 * Configures the loader.
+		 *
+		 * @param {{ ?baseUrl: string, ?map: Object, ?packages: Array.<({ name, ?location, ?main }|string)> }} config
+		 * The configuration data.
+		 */
+		var configure = function (config) {
+			// TODO: Expose all properties on req as getter/setters? Plugin modules like dojo/node being able to
+			// retrieve baseUrl is important.
+			baseUrl = config.baseUrl || baseUrl;
+
+			mix(map, config.map);
+
+			forEach(config.packages, function (p) {
+				// Allow shorthand package definition, where name and location are the same
+				if (typeof p === 'string') {
+					p = { name: p, location: p };
+				}
+
+				packs[p.name] = p;
+			});
+
+			function computeMapProg(map) {
+				// This routine takes a map as represented by a JavaScript object and initializes dest, a array of
+				// quads of (map-key, map-value, refex-for-map-key, length-of-map-key), sorted decreasing by length-
+				// of-map-key. The regex looks for the map-key followed by either "/" or end-of-string at the beginning
+				// of a the search source. Notice the map-value is irrelevent to the algorithm
+				var result = [],
+					k;
+
+				for (k in map) {
+					result.push([
+						k,
+						map[k],
+						new RegExp('^' + k.replace(/[-\[\]{}()*+?.,\\\^$|#\s]/g, '\\$&') + '(?:\/|$)'),
+						k.length
+					]);
+				}
+
+				result.sort(function (lhs, rhs) {
+					return rhs[3] - lhs[3];
+				});
+
+				return result;
+			}
+
+			mapProgs = computeMapProg(map);
+			forEach(mapProgs, function (item) {
+				item[1] = computeMapProg(item[1], []);
+				if (item[0] === '*') {
+					mapProgs.star = item[1];
+				}
+			});
+
+			// Note that old paths will get destroyed if reconfigured
+			config.paths && (pathsMapProg = computeMapProg(config.paths));
+		};
+	}
+
 	//
 	// loader state data
 	//
 
 	// AMD baseUrl config
 	var baseUrl = './',
-
-		// AMD paths config
-		paths = {},
-
-		// AMD packages config
-		packages,
 
 		// a map from pid to package configuration object
 		packs = {},
@@ -154,6 +218,10 @@
 				if (module.executed !== true) {
 					throw new Error('Attempt to require unloaded module ' + module.mid);
 				}
+				// Assign the result of the module to `module`
+				// otherwise require('moduleId') returns the internal
+				// module representation
+				module = module.result;
 			}
 			else {
 				// signature is (requestList [,callback])
@@ -396,7 +464,9 @@
 				result = typeof factory === 'function' ? factory.apply(null, args) : factory;
 
 				// TODO: But of course, module.cjs always exists.
-				module.result = result === undefined && module.cjs ? module.cjs.exports : result;
+				// Assign the new module.result to result so plugins can use exports
+				// to define their interface; the plugin checks below use result
+				result = module.result = result === undefined && module.cjs ? module.cjs.exports : result;
 				module.executed = true;
 				executedSomething = true;
 
@@ -572,9 +642,6 @@
 					exports: (module.result = {}),
 					setExports: function (exports) {
 						module.cjs.exports = exports;
-					},
-					config: function () {
-						return module.config;
 					}
 				}
 			});
@@ -641,6 +708,7 @@
 	if (has('debug-loader-internals')) {
 		req.inspect = function (name) {
 			/*jshint evil: true */
+			// TODO: Should this use console.log so people do not get any bright ideas about using this in apps?
 			return eval(name);
 		};
 	}
@@ -650,62 +718,17 @@
 		toAbsMid: toAbsMid,
 		toUrl: toUrl,
 
-		set: function (_baseUrl, _paths, _packages, _map) {
-			baseUrl = _baseUrl || baseUrl;
-			paths = _paths || paths;
-			packages = _packages || packages;
-			map = _map || map;
-
-			forEach(packages, function (p) {
-				if (typeof p === 'string') {
-					p = { name: p, location: p };
-				}
-
-				packs[p.name] = p;
-			});
-
-			function computeMapProg(map) {
-				// This routine takes a map as represented by a JavaScript object and initializes dest, a array of
-				// quads of (map-key, map-value, refex-for-map-key, length-of-map-key), sorted decreasing by length-
-				// of-map-key. The regex looks for the map-key followed by either "/" or end-of-string at the beginning
-				// of a the search source. Notice the map-value is irrelevent to the algorithm
-				var result = [],
-					k;
-
-				for (k in map) {
-					result.push([
-						k,
-						map[k],
-						new RegExp('^' + k.replace(/[-\[\]{}()*+?.,\\\^$|#\s]/g, '\\$&') + '(?:\/|$)'),
-						k.length
-					]);
-				}
-
-				result.sort(function (lhs, rhs) {
-					return rhs[3] - lhs[3];
-				});
-
-				return result;
-			}
-
-			//recompute map and paths programs structures on each config. If you want to
-			// keep the existing config, then either don't change these or do this [e.g.]
-			//		require.set({map:mix(require.get(map), { some new/altered map values  })});
-			mapProgs = computeMapProg(map, mapProgs);
-			forEach(mapProgs, function (item) {
-				item[1] = computeMapProg(item[1], []);
-				if (item[0] === '*') {
-					mapProgs.star = item[1];
-				}
-			});
-			computeMapProg(paths, pathsMapProg);
-		},
-
 		cache: function (cache) {
 			consumePendingCacheInsert();
 			pendingCacheInsert = cache;
 		}
 	});
+
+	has.add('loader-cjs-wrapping', true);
+	if (has('loader-cjs-wrapping')) {
+		var comments = /\/\*[\s\S]*?\*\/|\/\/.*$/mg,
+			requireCall = /require\s*\(\s*(["'])(.*?[^\\])\1\s*\)/g;
+	}
 
 	/**
 	 * @param deps //(array of commonjs.moduleId, optional)
@@ -713,8 +736,25 @@
 	 */
 	var define = mix(function (deps, factory) {
 		if (arguments.length === 1) {
-			factory = deps;
-			deps = [ 'require', 'exports', 'module' ];
+			if (has('loader-cjs-wrapping') && typeof deps === 'function') {
+				factory = deps;
+				deps = [ 'require', 'exports', 'module' ];
+
+				// Scan factory for require() calls and add them to the
+				// list of dependencies
+				factory.toString()
+					.replace(comments, '')
+					.replace(requireCall, function () {
+						deps.push(/* mid */ arguments[2]);
+					});
+			}
+			else if (/* define(value) */ !Array.isArray(deps)) {
+				var value = deps;
+				deps = [];
+				factory = function () {
+					return value;
+				};
+			}
 		}
 
 		defArgs = [ deps, factory ];

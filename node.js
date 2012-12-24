@@ -43,7 +43,7 @@ define([ 'dojo/has' ], function (has) {
 
 		normalize: function (/**string*/ id) {
 			if (id.charAt(0) === '.') {
-				id = require.inspect('baseUrl') + id;
+				id = require.baseUrl + id;
 			}
 
 			return id;
