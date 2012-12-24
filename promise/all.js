@@ -1,14 +1,13 @@
 define([
-	"../_base/array",
 	"../Deferred",
 	"./when"
-], function(array, Deferred, when){
+], function(Deferred, when){
 	"use strict";
 
 	// module:
 	//		dojo/promise/all
 
-	var some = array.some;
+	var some = Array.prototype.some;
 
 	return function all(objectOrArray){
 		// summary:
