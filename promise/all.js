@@ -7,8 +7,6 @@ define([
 	// module:
 	//		dojo/promise/all
 
-	var some = Array.prototype.some;
-
 	return function all(objectOrArray){
 		// summary:
 		//		Takes multiple promises and returns a new promise that is fulfilled
@@ -56,7 +54,7 @@ define([
 			results = keyLookup = null;
 		});
 		var waiting = array.length;
-		some(array, function(valueOrPromise, index){
+		array.some(function(valueOrPromise, index){
 			if(!object){
 				keyLookup.push(index);
 			}
