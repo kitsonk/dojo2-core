@@ -11,7 +11,7 @@ define([
 		bValue = 'b1=; ';
 
 	test.suite('cookie', function () {
-		test.setup(function () {
+		test.before(function () {
 			if (!navigator.cookieEnabled) {
 				throw new Error('Cookies not enabled in the current environment');
 			}
