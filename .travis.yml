@@ -7,5 +7,6 @@ env:
 install:
   - git submodule update --init --recursive
   - git clone https://github.com/csnover/dojo2-teststack.git _teststack
-  - npm install --production _teststack
-script: _teststack/runner.sh config=../test/teststack
+  - cd _teststack
+  - npm install --production
+script: node runner.js config=../test/teststack
