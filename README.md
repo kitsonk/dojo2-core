@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/csnover/dojo2-core.png?branch=master)](https://travis-ci.org/csnover/dojo2-core)
+
 # The Dojo Toolkit
 
 The Dojo Toolkit is a non-prescriptive collection of JavaScript modules
