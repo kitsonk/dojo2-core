@@ -6,9 +6,7 @@ env:
     - secure: "UnaoVA5iq7Nh4LJgya/fRivfGUcCgmRnxvs0szl2I9Pmzql2o8RRoI58CxWy\nkTbs7Ql4CZ/93DpTkk7nYYaiaheFME+i1BXXz+fTdRTaq4qStEyIiquqzJ0H\n5RWpdSxnRdJsAIarpq0QuMq95ZW3VbLmeCExcGtyzIy96YGPMMk="
 install:
   - git submodule update --init --recursive
-  - git clone https://github.com/csnover/dojo2-teststack.git _teststack
+  - git clone --recursive https://github.com/csnover/dojo2-teststack.git _teststack
   - cd _teststack
-  # Temporary until this repo is a little more stable and can be fixed to a commit as a submodule
-  - git clone https://github.com/csnover/dojo2-core.git dojo
   - npm install --production
 script: node runner.js config=../test/teststack
