@@ -8,11 +8,14 @@ define({
 	// Browsers to run integration testing against. Note that version numbers must be strings if used with Sauce
 	// OnDemand. Available options are browserName, browserVersion, platformName, and platformVersion
 	browsers: [
-		{ browserName: 'internet explorer', browserVersion: [ '9', '10' ] },
-		{ browserName: 'firefox', platformName: [ 'LINUX', 'MAC', 'WINDOWS' ] },
-		{ browserName: 'chrome', platformName: [ 'LINUX', 'MAC', 'WINDOWS' ] },
-		{ browserName: 'safari', platformName: 'MAC', browserVersion: [ '5.1', '6' ] },
-		{ browserName: 'opera', platformName: [ 'LINUX', 'MAC', 'WINDOWS' ] }
+		{ browserName: 'internet explorer', platformName: 'Windows 2012', browserVersion: '10' },
+		{ browserName: 'internet explorer', platformName: 'Windows 2008', browserVersion: '9' },
+		{ browserName: 'firefox', platformName: [ 'Linux', 'Mac 10.6', 'Windows 2012' ] },
+		{ browserName: 'chrome', platformName: [ 'Linux', 'Mac 10.8', 'Windows 2008' ] },
+		{ browserName: 'safari', platformName: 'Mac 10.8', browserVersion: '6' },
+		{ browserName: 'safari', platformName: 'Mac 10.6', browserVersion: '5' },
+// TODO: OperaDriver does not support async script execution, so disable until results are sent back by XHR
+//		{ browserName: 'opera', platformName: [ 'LINUX', 'MAC', 'WINDOWS' ] }
 	],
 
 	// Maximum number of simultaneous integration tests that should be executed on the remote WebDriver service
