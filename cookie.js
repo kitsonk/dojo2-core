@@ -108,6 +108,8 @@ define([], function () {
 
 		/**
 		 * Gets the key of the cookie at the given index.
+		 * Note that at least in Chrome 24, changing the value of an existing cookie puts that cookie at the end of the
+		 * cookie string and so the sort order changes. Other browsers maintain key sort order.
 		 * @returns {?string}
 		 */
 		key: function (/**number*/ index) {
