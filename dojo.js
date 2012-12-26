@@ -309,7 +309,7 @@
 				result;
 
 			// relative module ids are relative to the referenceModule; get rid of any dots
-			mid = compactPath(/^\./.test(mid) ? (referenceModule.mid + '/../' + mid) : mid);
+			mid = compactPath(/^\./.test(mid) && referenceModule ? (referenceModule.mid + '/../' + mid) : mid);
 			// at this point, mid is an absolute mid
 
 			// map the mid
