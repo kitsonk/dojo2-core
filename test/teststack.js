@@ -9,7 +9,8 @@ define({
 	// OnDemand. Available options are browserName, browserVersion, platformName, and platformVersion
 	browsers: [
 		{ browserName: 'internet explorer', platformName: 'Windows 2012', browserVersion: '10' },
-		{ browserName: 'internet explorer', platformName: 'Windows 2008', browserVersion: '9' },
+// TODO: IE9 hangs, so disable until it can be investigated
+//		{ browserName: 'internet explorer', platformName: 'Windows 2008', browserVersion: '9' },
 		{ browserName: 'firefox', platformName: [ 'Linux', 'Mac 10.6', 'Windows 2012' ] },
 		{ browserName: 'chrome', platformName: [ 'Linux', 'Mac 10.8', 'Windows 2008' ] },
 		{ browserName: 'safari', platformName: 'Mac 10.8', browserVersion: '6' },
