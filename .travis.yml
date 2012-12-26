@@ -8,5 +8,7 @@ install:
   - git submodule update --init --recursive
   - git clone https://github.com/csnover/dojo2-teststack.git _teststack
   - cd _teststack
+  # Temporary until this repo is a little more stable and can be fixed to a commit as a submodule
+  - git clone https://github.com/csnover/dojo2-core.git dojo
   - npm install --production
 script: node runner.js config=../test/teststack
