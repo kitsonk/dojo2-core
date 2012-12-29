@@ -9,4 +9,4 @@ install:
   - git clone --recursive https://github.com/csnover/dojo2-teststack.git ../teststack
   - cd ../teststack
   - npm install --production
-script: node runner.js config=dojo/test/teststack
+script: node runner.js config=dojo2-core/test/teststack
