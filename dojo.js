@@ -684,10 +684,10 @@
 
 		// retain the ability to get node's require
 		req.nodeRequire = require;
-		injectUrl = function (url, callback) {
+		injectUrl = function (url, callback, module, parent) {
 			fs.readFile(url, 'utf8', function (error, data) {
 				if (error) {
-					throw error;
+					throw new Error('Failed to load module ' + module.mid + ' from ' + url + (parent ? ' (parent: ' + parent.mid + ')' : ''));
 				}
 
 				vm.runInThisContext(data, url);
