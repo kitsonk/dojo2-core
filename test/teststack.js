@@ -34,7 +34,7 @@ define({
 	},
 
 	// Packages that should be registered with the loader in each testing environment
-	packages: null,
+	packages: [ { name: 'dojo', location: 'dojo2-core' } ],
 
 	// Non-functional test suite(s) to run in each browser
 	suites: [ 'dojo/test/all' ],

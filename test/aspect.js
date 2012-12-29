@@ -1,7 +1,7 @@
 define([
 	'teststack!tdd',
 	'teststack/lib/assert',
-	'dojo/aspect'
+	'../aspect'
 ], function (test, assert, aspect) {
 	test.suite('aspect', function () {
 		test.test('before', function () {

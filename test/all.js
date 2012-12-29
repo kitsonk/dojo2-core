@@ -1,5 +1,5 @@
 define([
 	'./aspect',
-	'dojo/has!host-browser?./cookie',
-	'dojo/has!host-browser?./dom-form'
+	'dojo-ts/has!host-browser?./cookie',
+	'dojo-ts/has!host-browser?./dom-form'
 ], function () {});
