@@ -223,7 +223,7 @@
 				// module representation
 				module = module.result;
 			}
-			else {
+			else if (Array.isArray(a1)) {
 				// signature is (requestList [,callback])
 				// construct a synthetic module to control execution of the requestList, and, optionally, callback
 				module = getModuleInfo('*' + (++uidGenerator));
