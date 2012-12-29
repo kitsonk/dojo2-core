@@ -66,7 +66,7 @@
 		var configure = function (config) {
 			// TODO: Expose all properties on req as getter/setters? Plugin modules like dojo/node being able to
 			// retrieve baseUrl is important.
-			baseUrl = config.baseUrl || baseUrl;
+			baseUrl = (config.baseUrl || baseUrl).replace(/\/*$/, '/');
 
 			mix(map, config.map);
 
@@ -74,6 +74,10 @@
 				// Allow shorthand package definition, where name and location are the same
 				if (typeof p === 'string') {
 					p = { name: p, location: p };
+				}
+
+				if (p.location != null) {
+					p.location = p.location.replace(/\/*$/, '/');
 				}
 
 				packs[p.name] = p;
@@ -319,7 +323,9 @@
 
 			match = mid.match(/^([^\/]+)(\/(.+))?$/);
 			pid = match ? match[1] : '';
-			if ((pack = packs[pid])) {
+			pack = packs[pid];
+
+			if (pack) {
 				mid = pid + '/' + (midInPackage = (match[3] || pack.main || 'main'));
 			}
 			else {
@@ -328,12 +334,18 @@
 
 			if (!(result = modules[mid])) {
 				mapItem = runMapProg(mid, pathsMapProg);
-				url = mapItem ? mapItem[1] + mid.substring(mapItem[3]) : (pid ? pack.location + '/' + midInPackage : mid);
+				url = mapItem ? mapItem[1] + mid.substring(mapItem[3]) : (pid ? pack.location + midInPackage : mid);
 				result = {
 					pid: pid,
 					mid: mid,
 					pack: pack,
-					url: compactPath((/(?:^\/)|(?:\:)/.test(url) ? '' : baseUrl) + url + (/\.js(?:\?[^?]*)?$/.test(url) ? '' : '.js'))
+					url: compactPath(
+						// absolute urls should not be prefixed with baseUrl
+						(/^(?:\/|\w+:)/.test(url) ? '' : baseUrl) +
+						url +
+						// urls with a javascript extension should not have another one added
+						(/\.js(?:\?[^?]*)?$/.test(url) ? '' : '.js')
+					)
 				};
 			}
 
