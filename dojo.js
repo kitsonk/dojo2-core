@@ -318,7 +318,7 @@
 
 			// map the mid
 			if ((mapItem = runMapProg(mid, (referenceModule && runMapProg(referenceModule.mid, mapProgs) || mapProgs.star)))) {
-				mid = mapItem[1] + mid.substring(mapItem[3]);
+				mid = mapItem[1] + mid.slice(mapItem[3]);
 			}
 
 			match = mid.match(/^([^\/]+)(\/(.+))?$/);
@@ -334,7 +334,7 @@
 
 			if (!(result = modules[mid])) {
 				mapItem = runMapProg(mid, pathsMapProg);
-				url = mapItem ? mapItem[1] + mid.substring(mapItem[3]) : (pid ? pack.location + midInPackage : mid);
+				url = mapItem ? mapItem[1] + mid.slice(mapItem[3]) : (pid ? pack.location + midInPackage : mid);
 				result = {
 					pid: pid,
 					mid: mid,
@@ -506,7 +506,7 @@
 
 					// pluginResource is really just a placeholder with the wrong mid (because we couldn't calculate it until the plugin was on board)
 					// fix() replaces the pseudo module in a resolved deps array with the real module
-					// lastly, mark the pseuod module as arrived and delete it from modules
+					// lastly, mark the pseudo module as arrived and delete it from modules
 					pseudoPluginResource.fix(modules[mid]);
 					--waitingCount;
 					delete modules[pseudoPluginResource.mid];
