@@ -4,9 +4,8 @@ define([
 	'../errors/CancelError',
 	'../Deferred',
 	'../io-query',
-	'../_base/array',
-	'../_base/lang'
-], function(exports, RequestError, CancelError, Deferred, ioQuery, array, lang){
+	'../lang'
+], function(exports, RequestError, CancelError, Deferred, ioQuery, lang){
 	exports.deepCopy = function deepCopy(target, source){
 		for(var name in source){
 			var tval = target[name],
@@ -24,7 +23,7 @@ define([
 
 	exports.deepCreate = function deepCreate(source, properties){
 		properties = properties || {};
-		var target = lang.delegate(source),
+		var target = Object.create(source),
 			name, value;
 
 		for(name in source){
@@ -94,9 +93,9 @@ define([
 	};
 
 	exports.addCommonMethods = function addCommonMethods(provider, methods){
-		array.forEach(methods||['GET', 'POST', 'PUT', 'DELETE'], function(method){
+		(methods||['GET', 'POST', 'PUT', 'DELETE']).forEach(function(method){
 			provider[(method === 'DELETE' ? 'DEL' : method).toLowerCase()] = function(url, options){
-				options = lang.delegate(options||{});
+				options = Object.create(options||{});
 				options.method = method;
 				return provider(url, options);
 			};
@@ -106,7 +105,7 @@ define([
 	exports.parseArgs = function parseArgs(url, options, skipData){
 		var data = options.data,
 			query = options.query;
-		
+
 		if(data && !skipData){
 			if(typeof data === 'object'){
 				options.data = ioQuery.objectToQuery(data);

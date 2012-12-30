@@ -1,4 +1,4 @@
-define(["./_base/lang"], function(lang){
+define([], function(){
 
 // module:
 //		dojo/io-query
@@ -34,7 +34,7 @@ return {
             var value = map[name];
             if(value != backstop[name]){
                 var assign = enc(name) + "=";
-                if(lang.isArray(value)){
+                if(Array.isArray(value)){
                     for(var i = 0, l = value.length; i < l; ++i){
                         pairs.push(assign + enc(value[i]));
                     }
@@ -84,7 +84,7 @@ return {
                     ret[name] = [ret[name]];
                 }
 
-                if(lang.isArray(ret[name])){
+                if(Array.isArray(ret[name])){
                     ret[name].push(val);
                 }else{
                     ret[name] = val;

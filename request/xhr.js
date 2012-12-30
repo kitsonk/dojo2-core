@@ -18,8 +18,8 @@ define([
 	has.add('native-xhr2', function(){
 		if(!has('native-xhr')){ return; }
 		var x = new XMLHttpRequest();
-		return typeof x['addEventListener'] !== 'undefined' &&
-			(typeof opera === 'undefined' || typeof x['upload'] !== 'undefined');
+		return typeof x.addEventListener !== 'undefined' &&
+			(typeof opera === 'undefined' || typeof x.upload !== 'undefined');
 	});
 
 	has.add('native-formdata', function(){
@@ -77,7 +77,7 @@ define([
 			}
 			function onError(evt){
 				var _xhr = evt.target;
-				var error = new RequestError('Unable to load ' + response.url + ' status: ' + _xhr.status, response); 
+				var error = new RequestError('Unable to load ' + response.url + ' status: ' + _xhr.status, response);
 				dfd.handleResponse(response, error);
 			}
 
