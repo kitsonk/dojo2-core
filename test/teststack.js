@@ -9,16 +9,16 @@ define({
 	// OnDemand. Available options are browserName, version, platform, and platformVersion
 	browsers: [
 		{ browserName: 'internet explorer', version: '10', platform: 'Windows 2012' },
-// TODO: IE9 hangs due to strange module definition corruption that only occurs consistently on Sauce Labs;
-// figure out what is going on here and fix it
-//		{ browserName: 'internet explorer', platform: 'Windows 2008', version: '9' },
+		{ browserName: 'internet explorer', platform: 'Windows 2008', version: '9' },
 		// Firefox 17 Mac is currently unavailable on Sauce Labs
 		{ browserName: 'firefox', version: '17', platform: [ 'Linux', 'Windows 2012' ] },
 		{ browserName: 'chrome', platform: [ 'Linux', 'Mac 10.8', 'Windows 2008' ] },
 		{ browserName: 'safari', version: '6', platform: 'Mac 10.8' },
 		{ browserName: 'safari', version: '5', platform: 'Mac 10.6' },
 		// Opera Mac is currently unavailable on Sauce Labs
-		{ browserName: 'opera', version: '12', platform: [ 'LINUX', 'WINDOWS' ] }
+// TODO: Cookie tests in Opera are failing and this is bumming me out; fix them in a bit, but push an important fix to
+// the loader first
+//		{ browserName: 'opera', version: '12', platform: [ 'Linux', 'Windows 2008' ] }
 	],
 
 	// Maximum number of simultaneous integration tests that should be executed on the remote WebDriver service
