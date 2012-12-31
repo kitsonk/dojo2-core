@@ -16,9 +16,7 @@ define({
 		{ browserName: 'safari', version: '6', platform: 'Mac 10.8' },
 		{ browserName: 'safari', version: '5', platform: 'Mac 10.6' },
 		// Opera Mac is currently unavailable on Sauce Labs
-// TODO: Cookie tests in Opera are failing and this is bumming me out; fix them in a bit, but push an important fix to
-// the loader first
-//		{ browserName: 'opera', version: '12', platform: [ 'Linux', 'Windows 2008' ] }
+		{ browserName: 'opera', version: '12', platform: [ 'Linux', 'Windows 2008' ] }
 	],
 
 	// Maximum number of simultaneous integration tests that should be executed on the remote WebDriver service

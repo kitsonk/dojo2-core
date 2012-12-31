@@ -70,25 +70,26 @@ define([
 
 			var expiry = new Date(),
 				secondsToWait = 2,
-				dfd = this.async((secondsToWait + 3) * 1000, 2);
+				dfd = this.async((secondsToWait + 3) * 1000, 2),
+				msecToSecond = 1000 - (expiry % 1000);
 
-			expiry.setSeconds(expiry.getSeconds() + secondsToWait);
+			expiry.setSeconds(expiry.getSeconds() + secondsToWait, 0);
 			cookie.setItem(aKey, aValue, { expires: expiry });
 			assert.isEqual(cookie.length, 1, 'expiring cookie a is set');
 
 			expiry = new Date(expiry);
-			expiry.setSeconds(expiry.getSeconds() + secondsToWait);
+			expiry.setSeconds(expiry.getSeconds() + secondsToWait, 0);
 			cookie.setItem(bKey, bValue, { expires: expiry });
 			assert.isEqual(cookie.length, 2, 'expiring cookie b is set');
 
 			setTimeout(dfd.callback(function () {
 				assert.isEqual(cookie.length, 1, 'one expired cookie expired');
 				assert.isEqual(cookie.getItem(aKey), null, 'cookie a correctly expired');
-			}), (secondsToWait + 1) * 1000);
+			}), (secondsToWait + 1) * 1000 + msecToSecond);
 
 			setTimeout(dfd.callback(function () {
 				assert.isEqual(cookie.length, 0, 'two expired cookies expired');
-			}), (secondsToWait + 2) * 1000);
+			}), (secondsToWait + 2) * 1000 + msecToSecond);
 		});
 	});
 });
