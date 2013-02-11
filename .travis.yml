@@ -10,3 +10,4 @@ install:
   - cd ../teststack
   - npm install --production
 script: node runner.js config=dojo2-core/test/teststack
+
