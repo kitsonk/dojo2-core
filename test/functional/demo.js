@@ -10,9 +10,7 @@ define([
 		});
 
 		test.test('it works', function () {
-			var remote = this.remote;
-
-			return remote.elementById('testInput')
+			return this.remote.elementById('testInput')
 				.clickElement()
 				.keys('hello')
 				.end()

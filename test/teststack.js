@@ -7,11 +7,11 @@ define({
 
 	// Browsers to run integration testing against. Note that version numbers must be strings if used with Sauce
 	// OnDemand. Available options are browserName, version, platform, and platformVersion
-	browsers: [
+	environments: [
 		{ browserName: 'internet explorer', version: '10', platform: 'Windows 2012' },
 		{ browserName: 'internet explorer', platform: 'Windows 2008', version: '9' },
-		// Firefox 17 Mac is currently unavailable on Sauce Labs
-		{ browserName: 'firefox', version: '17', platform: [ 'Linux', 'Windows 2012' ] },
+		// Firefox 18 Mac is currently unavailable on Sauce Labs
+		{ browserName: 'firefox', version: '18', platform: [ 'Linux', 'Windows 2012' ] },
 		{ browserName: 'chrome', platform: [ 'Linux', 'Mac 10.8', 'Windows 2008' ] },
 		{ browserName: 'safari', version: '6', platform: 'Mac 10.8' },
 		{ browserName: 'safari', version: '5', platform: 'Mac 10.6' },
