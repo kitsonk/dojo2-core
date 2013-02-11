@@ -2,8 +2,8 @@ define({
 	// The port on which the instrumenting proxy will listen
 	proxyPort: 9000,
 
-	// A fully qualified URL to the client.html that is passed to remotely driven browsers for unit testing
-	clientHtmlLocation: 'http://localhost:9000/__teststack/client.html',
+	// A fully qualified URL to the teststack proxy
+	proxyUrl: 'http://localhost:9000/',
 
 	// Browsers to run integration testing against. Note that version numbers must be strings if used with Sauce
 	// OnDemand. Available options are browserName, version, platform, and platformVersion

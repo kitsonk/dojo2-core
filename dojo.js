@@ -70,7 +70,7 @@
 		 */
 		var configure = function (config) {
 			// TODO: Expose all properties on req as getter/setters? Plugin modules like dojo/node being able to
-			// retrieve baseUrl is important.
+			// retrieve baseUrl is important. baseUrl is defined as a getter currently.
 			baseUrl = (config.baseUrl || baseUrl).replace(/\/*$/, '/');
 
 			mix(map, config.map);
@@ -743,6 +743,13 @@
 			consumePendingCacheInsert();
 			pendingCacheInsert = cache;
 		}
+	});
+
+	Object.defineProperty(req, 'baseUrl', {
+		get: function () {
+			return baseUrl;
+		},
+		enumerable: true
 	});
 
 	has.add('loader-cjs-wrapping', true);

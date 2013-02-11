@@ -5,8 +5,7 @@ define([
 ], function (test, assert, require) {
 	test.suite('demo', function () {
 		test.before(function () {
-			// TODO: Fix this invalid URL generation
-			return this.remote.get('http://localhost:9000/' + require.toAbsMid('./demo.html'));
+			return this.remote.get(require.toUrl('./demo.html'));
 		});
 
 		test.test('it works', function () {
