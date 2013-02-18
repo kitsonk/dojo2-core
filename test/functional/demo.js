@@ -1,6 +1,6 @@
 define([
 	'teststack!tdd',
-	'teststack/lib/assert',
+	'teststack/chai!assert',
 	'require'
 ], function (test, assert, require) {
 	test.suite('demo', function () {
@@ -17,7 +17,7 @@ define([
 				.clickElement()
 				.end()
 				.alertText().then(function (text) {
-					assert.isEqual(text, 'hello', 'alert shows text from input');
+					assert.strictEqual(text, 'hello', 'alert shows text from input');
 				})
 				.dismissAlert();
 		});
