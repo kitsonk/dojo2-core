@@ -12,11 +12,10 @@ define({
 		{ browserName: 'internet explorer', platform: 'Windows 2008', version: '9' },
 		// Firefox 18 Mac is currently unavailable on Sauce Labs
 		{ browserName: 'firefox', version: '18', platform: [ 'Linux', 'Windows 2012' ] },
-		{ browserName: 'chrome', platform: [ 'Linux', 'Mac 10.8', 'Windows 2008' ] },
-		{ browserName: 'safari', version: '6', platform: 'Mac 10.8' },
-		{ browserName: 'safari', version: '5', platform: 'Mac 10.6' },
-		// Opera Mac is currently unavailable on Sauce Labs
-		{ browserName: 'opera', version: '12', platform: [ 'Linux', 'Windows 2008' ] }
+		// Mac OS platforms on Sauce Labs fail to execute "keys" command, so disabled for now
+		{ browserName: 'chrome', platform: [ 'Linux', /* 'Mac 10.8', */ 'Windows 2008' ] },
+//		{ browserName: 'safari', version: '6', platform: 'Mac 10.8' },
+//		{ browserName: 'safari', version: '5', platform: 'Mac 10.6' }
 	],
 
 	// Maximum number of simultaneous integration tests that should be executed on the remote WebDriver service
