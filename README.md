@@ -374,14 +374,12 @@ using `/*jshint*/`.
 
 ## Testing
 
-Test cases are written using Mocha with XXX assertion library (must be
-assert-style library).
+Test cases MUST be written using
+[dojo2-teststack](https://github.com/csnover/dojo2-teststack).
 
-XXX% line coverage and XXX% branch coverage is required for all code submitted
-to this repository, as reported by istanbul.
-
-Functional testing of UI components must use XXX (?:webdriver-js|wd) (probably
-wd).
+XXX% line coverage and XXX% branch coverage MUST be provided for all code
+submitted to this repository, as reported by istanbul’s combined coverage
+results.
 
 
 ## License

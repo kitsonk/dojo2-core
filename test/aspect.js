@@ -1,6 +1,6 @@
 define([
 	'teststack!tdd',
-	'teststack/lib/assert',
+	'teststack/chai!assert',
 	'../aspect'
 ], function (test, assert, aspect) {
 	test.suite('aspect', function () {
@@ -31,7 +31,7 @@ define([
 			signal2.remove();
 			obj.method(9);
 
-			assert.is(order, [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ], 'order matches');
+			assert.deepEqual(order, [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ], 'order matches');
 		});
 
 		test.test('after', function () {
@@ -93,7 +93,7 @@ define([
 			obj.method(8); // 8, 9, 10
 			obj.method(8); // 8, 9, 10, 12
 
-			assert.is(order, [0, 0, 3, 0, 5, 3, 0, 5, 3, 6, 0, 3, 7, 4, 8, 9, 10, 8, 9, 10, 12], 'order matches');
+			assert.deepEqual(order, [0, 0, 3, 0, 5, 3, 0, 5, 3, 6, 0, 3, 7, 4, 8, 9, 10, 8, 9, 10, 12], 'order matches');
 
 			obj = { method: function () {} };
 
@@ -101,7 +101,7 @@ define([
 				return false;
 			}, true);
 
-			assert.isEqual(obj.method(), false, 'method returns false after reset');
+			assert.strictEqual(obj.method(), false, 'method returns false after reset');
 		});
 
 		test.test('around', function () {
@@ -128,7 +128,7 @@ define([
 			order.push(obj.method(0));
 			obj.method(4);
 
-			assert.is(order, [ 0, 1, 2, 3, 4, 5, 6 ], 'order matches');
+			assert.deepEqual(order, [ 0, 1, 2, 3, 4, 5, 6 ], 'order matches');
 		});
 
 		test.test('delegation', function () {
@@ -146,7 +146,7 @@ define([
 				return x;
 			});
 			aspect.after(proto, 'bar', function () {
-				assert.isEqual(this.isInstance, true);
+				assert.strictEqual(this.isInstance, true);
 			});
 			proto.foo(0);
 			function Class() {}
@@ -160,7 +160,7 @@ define([
 			instance.bar();
 			instance.foo(2);
 			proto.foo(5);
-			assert.is(order, [ 0, 1, 2, 3, 4, 5, 6 ]);
+			assert.deepEqual(order, [ 0, 1, 2, 3, 4, 5, 6 ]);
 		});
 	});
 });
