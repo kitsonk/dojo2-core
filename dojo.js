@@ -89,10 +89,37 @@
 			});
 
 			function computeMapProg(map) {
-				// This routine takes a map as represented by a JavaScript object and initializes dest, a array of
-				// quads of (map-key, map-value, refex-for-map-key, length-of-map-key), sorted decreasing by length-
+				// This method takes a map as represented by a JavaScript object and initializes an array of
+				// arrays of (map-key, map-value, regex-for-map-key, length-of-map-key), sorted decreasing by length-
 				// of-map-key. The regex looks for the map-key followed by either "/" or end-of-string at the beginning
-				// of a the search source. Notice the map-value is irrelevent to the algorithm
+				// of a the search source.
+				//
+				// Maps look like this:
+				//
+				// map: { C: { D: E } }
+				//      A    B
+				//
+				// The computed mapping is a 4-array deep tree, where the outermost array corresponds to the source
+				// mapping object A, the 2nd level arrays each correspond to one of the source mappings C -> B, the 3rd
+				// level arrays correspond to each destination mapping object B, and the innermost arrays each
+				// correspond to one of the destination mappings D -> E.
+				//
+				// So, the overall structure looks like this:
+				//
+				// mapProgs = [ source mapping array, source mapping array, ... ]
+				// source mapping array = [
+				//     source module id,
+				//     [ destination mapping array, destination mapping array, ... ],
+				//     RegExp that matches on source module id,
+				//     source module id length
+				// ]
+				// destination mapping array = [
+				//     original module id,
+				//     destination module id,
+				//     RegExp that matches on original module id,
+				//     original module id length
+				// ]
+
 				var result = [],
 					k;
 
@@ -321,8 +348,12 @@
 			mid = compactPath(/^\./.test(mid) && referenceModule ? (referenceModule.mid + '/../' + mid) : mid);
 			// at this point, mid is an absolute mid
 
-			// map the mid
-			if ((mapItem = runMapProg(mid, (referenceModule && runMapProg(referenceModule.mid, mapProgs) || mapProgs.star)))) {
+			// if there is a reference module, then use its module map, if one exists; otherwise, use the global map.
+			// see computeMapProg for more information on the structure of the map arrays
+			var moduleMap = referenceModule && runMapProg(referenceModule.mid, mapProgs);
+			moduleMap = moduleMap ? moduleMap[1] : mapProgs.star;
+
+			if ((mapItem = runMapProg(mid, moduleMap))) {
 				mid = mapItem[1] + mid.slice(mapItem[3]);
 			}
 
